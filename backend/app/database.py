@@ -21,49 +21,76 @@ mock_institutions: List[Dict[str, Any]] = [
         "name": "Delhi Technological University (DTU)",
         "city": "New Delhi",
         "state": "Delhi",
+        "region": "Northern",
         "category": "Technical",
-        "open_cases_count": 4,
-        "compliance_rating": "Grade A+ (98.4%)"
+        "open_cases_count": 3,
+        "compliance_rating": "Grade B (Needs Scrutiny)"
     },
     {
         "id": "inst-2",
-        "permanent_id": "1-29481903",
-        "name": "College of Engineering Pune (COEP Tech)",
+        "permanent_id": "1-45892110",
+        "name": "COEP Technological University (formerly COEP)",
         "city": "Pune",
         "state": "Maharashtra",
+        "region": "Western",
         "category": "Technical",
         "open_cases_count": 2,
-        "compliance_rating": "Grade A+ (99.1%)"
+        "compliance_rating": "Grade A (94.5%)"
     },
     {
         "id": "inst-3",
-        "permanent_id": "1-48201948",
-        "name": "Veermata Jijabai Technological Institute (VJTI)",
-        "city": "Mumbai",
+        "permanent_id": "1-332918231",
+        "name": "COEP Hostel & Examination Bureau",
+        "city": "Pune",
         "state": "Maharashtra",
+        "region": "Western",
         "category": "Technical",
-        "open_cases_count": 3,
-        "compliance_rating": "Grade A (95.0%)"
+        "open_cases_count": 1,
+        "compliance_rating": "Grade B+ (88.2%)"
     },
     {
         "id": "inst-4",
-        "permanent_id": "1-85729104",
-        "name": "National Institute of Technology Trichy (NITT)",
-        "city": "Tiruchirappalli",
-        "state": "Tamil Nadu",
+        "permanent_id": "1-12490182",
+        "name": "Veermata Jijabai Technological Institute (VJTI)",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "region": "Western",
         "category": "Technical",
-        "open_cases_count": 1,
-        "compliance_rating": "Grade A++ (99.7%)"
+        "open_cases_count": 2,
+        "compliance_rating": "Grade A+ (96.8%)"
     },
     {
         "id": "inst-5",
+        "permanent_id": "1-15029184",
+        "name": "Sardar Patel College of Engineering (SPCE)",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "region": "Western",
+        "category": "Technical",
+        "open_cases_count": 1,
+        "compliance_rating": "Grade A+ (97.4%)"
+    },
+    {
+        "id": "inst-6",
+        "permanent_id": "1-10294821",
+        "name": "Delhi Institute of Engineering & Technology (DIET)",
+        "city": "New Delhi",
+        "state": "Delhi",
+        "region": "Northern",
+        "category": "Technical",
+        "open_cases_count": 2,
+        "compliance_rating": "Grade C (Critical Overdue)"
+    },
+    {
+        "id": "inst-7",
         "permanent_id": "1-93810294",
         "name": "RV College of Engineering",
         "city": "Bengaluru",
         "state": "Karnataka",
+        "region": "Southern",
         "category": "Technical",
-        "open_cases_count": 6,
-        "compliance_rating": "Grade A (94.2%)"
+        "open_cases_count": 1,
+        "compliance_rating": "Grade A++ (99.2%)"
     }
 ]
 
@@ -284,6 +311,94 @@ mock_grievances: List[Dict[str, Any]] = [
         "evidence_list": [],
         "timeline": [],
         "related_case_ids": []
+    },
+    {
+        "id": "AICTE-2026-GRV-91024",
+        "title": "Mandatory Laptop Fee Extortion & Refusal to Issue Hall Ticket",
+        "category": "FEES_REFUND",
+        "category_label": "Fee Refund & Excess Charges",
+        "institution_name": "Delhi Institute of Engineering & Technology (DIET)",
+        "aicte_permanent_id": "1-10294821",
+        "city": "New Delhi",
+        "state": "Delhi",
+        "complainant_name": "Vikram Malhotra",
+        "complainant_role": "Student",
+        "contact_mobile": "+91 97110 99887",
+        "contact_email": "vikram.m@example.com",
+        "is_anonymous": False,
+        "details": "College is demanding ₹65,000 for mandatory unbranded laptops and withholding end-term examination admit cards in direct violation of AICTE guidelines.",
+        "current_stage": "ESCALATED",
+        "stage_number": 4,
+        "sla_hours_remaining": -72,
+        "isOverdue": True,
+        "assigned_officer": {
+            "name": "Dr. Ramesh Chandra Verma",
+            "designation": "Director, PGRC",
+            "bureau": "AICTE Central HQ",
+            "badge_verified": True
+        },
+        "evidence_list": [],
+        "timeline": [
+            {
+                "id": "t-diet-1",
+                "title": "Complaint Lodged & Cryptographically Hashed",
+                "description": "Complainant submitted fee receipt and admit card withholding notice.",
+                "actor": "Citizen Portal",
+                "role": "Citizen",
+                "timestamp": "10 Oct 2026",
+                "stage": "REGISTERED"
+            },
+            {
+                "id": "t-diet-2",
+                "title": "Escalated to State Technical Ombudsman",
+                "description": "Institution failed to respond within 21-day statutory SLA window. Case overdue.",
+                "actor": "AICTE SLA Engine",
+                "role": "System Escalation",
+                "timestamp": "18 Oct 2026",
+                "stage": "ESCALATED"
+            }
+        ],
+        "related_case_count": 2,
+        "related_case_ids": ["AICTE-2024-GRV-8102"]
+    },
+    {
+        "id": "AICTE-2026-GRV-71029",
+        "title": "Excessive Caution Deposit Retention & Disputed Library Recovery",
+        "category": "FEES_REFUND",
+        "category_label": "Fee Refund & Excess Charges",
+        "institution_name": "COEP Technological University",
+        "aicte_permanent_id": "1-45892110",
+        "city": "Pune",
+        "state": "Maharashtra",
+        "complainant_name": "Neha Deshmukh",
+        "complainant_role": "Student",
+        "contact_mobile": "+91 98220 11223",
+        "contact_email": "neha.d@example.com",
+        "is_anonymous": False,
+        "details": "Hostel administration deducted ₹25,000 without sharing inventory inspection report.",
+        "current_stage": "INVESTIGATION",
+        "stage_number": 3,
+        "sla_hours_remaining": 28,
+        "assigned_officer": {
+            "name": "Dr. Ramesh Chandra Verma",
+            "designation": "Director, PGRC",
+            "bureau": "AICTE Central HQ",
+            "badge_verified": True
+        },
+        "evidence_list": [],
+        "timeline": [
+            {
+                "id": "t-coep-1",
+                "title": "Complaint Registered",
+                "description": "Complaint regarding ₹25,000 caution money retention.",
+                "actor": "Citizen Portal",
+                "role": "Citizen",
+                "timestamp": "19 Oct 2026",
+                "stage": "REGISTERED"
+            }
+        ],
+        "related_case_count": 1,
+        "related_case_ids": []
     }
 ]
 
@@ -431,6 +546,22 @@ mock_resolution_proofs: List[Dict[str, Any]] = [
         "reviewed_by": None,
         "complainant_dispute_filed": True,
         "dispute_reason": "College passed responsibility to university without issuing the clearance certificate."
+    }
+]
+
+# Seed inspection orders issued by AICTE Vigilance & Grievance Bureau
+mock_inspection_orders: List[Dict[str, Any]] = [
+    {
+        "id": "INSP-2026-081",
+        "permanent_id": "1-10928341",
+        "institution_name": "Delhi Technological University (DTU)",
+        "officer_name": "Dr. Ramesh Chandra Verma (PGRC)",
+        "inspection_type": "SURPRISE_PHYSICAL",
+        "target_date": "2026-11-02",
+        "terms_of_reference": "Forensic audit of student fee refund records, non-compliance with Chapter 10 refund cutoff, and examination of 3 identical caution money retention cases.",
+        "inspecting_team": ["Dr. Ramesh Chandra Verma", "Shri S. K. Bansal (Finance Bureau)", "State Technical Officer"],
+        "status": "ORDERED",
+        "ordered_at": "2026-10-25T15:30:00Z"
     }
 ]
 

@@ -14,6 +14,7 @@ from app.database import (
     mock_otp_sessions,
     mock_messages,
     mock_resolution_proofs,
+    mock_inspection_orders,
     get_past_atrs_for_institution,
     verify_case_timeline,
     tamper_case_timeline,
@@ -37,10 +38,13 @@ from app.schemas import (
     AtrQualityResult,
     AtrScrutinyDecisionRequest,
     TimelineVerificationResponse,
-    SimulateTamperRequest
+    SimulateTamperRequest,
+    InstitutionScorecardItem,
+    IssueInspectionOrderRequest
 )
 from app.matcher import analyze_grievance_overlap, find_all_overlap_candidates
 from app.atr_validator import evaluate_atr_quality
+from app.scorecard import generate_all_scorecards, evaluate_institution_scorecard
 
 app = FastAPI(
     title="AICTE NIVARAN API",
@@ -785,4 +789,102 @@ def restore_timeline(case_id: str):
 
     result = restore_case_timeline(case_id)
     return result
+
+
+# ==========================================================================
+# Institution Grievance Scorecard & Inspection Priority Endpoints
+# ==========================================================================
+
+@app.get("/api/scorecards", response_model=List[InstitutionScorecardItem])
+def get_institution_scorecards(
+    tier: Optional[str] = Query(None, description="Filter by priority tier (CRITICAL, HIGH, MEDIUM, ROUTINE)"),
+    region: Optional[str] = Query(None, description="Filter by geographic region"),
+    search: Optional[str] = Query(None, description="Search by Permanent ID or Name")
+):
+    """
+    Aggregates complaints by AICTE Permanent ID and produces an explainable,
+    rule-based inspection priority ranking.
+    """
+    scorecards = generate_all_scorecards(
+        mock_institutions,
+        mock_grievances,
+        mock_resolution_proofs
+    )
+
+    if tier and tier.upper() != "ALL":
+        scorecards = [s for s in scorecards if s["priority_tier"].upper() == tier.upper()]
+
+    if region and region.upper() != "ALL":
+        scorecards = [s for s in scorecards if region.lower() in s["region"].lower()]
+
+    if search:
+        q = search.lower().strip()
+        scorecards = [
+            s for s in scorecards
+            if q in s["permanent_id"].lower() or q in s["institution_name"].lower() or q in s["city"].lower()
+        ]
+
+    return scorecards
+
+
+@app.get("/api/scorecards/{permanent_id}", response_model=InstitutionScorecardItem)
+def get_scorecard_detail(permanent_id: str):
+    """
+    Retrieves the detailed scorecard and transparent scoring breakdown for a specific Permanent ID.
+    """
+    scorecards = generate_all_scorecards(
+        mock_institutions,
+        mock_grievances,
+        mock_resolution_proofs
+    )
+    for s in scorecards:
+        if s["permanent_id"].lower() == permanent_id.lower():
+            return s
+    raise HTTPException(status_code=404, detail=f"No institution found with Permanent ID {permanent_id}")
+
+
+@app.post("/api/scorecards/{permanent_id}/order-inspection")
+def order_inspection(permanent_id: str, req: IssueInspectionOrderRequest):
+    """
+    Issues an official AICTE Vigilance & Grievance Bureau inspection mandate or summons.
+    """
+    scorecards = generate_all_scorecards(
+        mock_institutions,
+        mock_grievances,
+        mock_resolution_proofs
+    )
+    target_card = next((s for s in scorecards if s["permanent_id"].lower() == permanent_id.lower()), None)
+    if not target_card:
+        raise HTTPException(status_code=404, detail=f"Permanent ID {permanent_id} not found")
+
+    new_order = {
+        "id": f"INSP-2026-{random.randint(100, 999)}",
+        "permanent_id": permanent_id,
+        "institution_name": target_card["institution_name"],
+        "officer_name": req.officer_name,
+        "inspection_type": req.inspection_type,
+        "target_date": req.target_date,
+        "terms_of_reference": req.terms_of_reference,
+        "inspecting_team": req.inspecting_team or [req.officer_name, "State Nodal Observer"],
+        "status": "ORDERED",
+        "ordered_at": datetime.datetime.now().isoformat(),
+        "inspection_priority_score": target_card["inspection_priority_score"],
+        "priority_tier": target_card["priority_tier"],
+    }
+    mock_inspection_orders.append(new_order)
+
+    return {
+        "success": True,
+        "message": f"Official {req.inspection_type} inspection mandate issued for {target_card['institution_name']}.",
+        "order": new_order
+    }
+
+
+@app.get("/api/scorecards/{permanent_id}/orders")
+def get_inspection_orders(permanent_id: str):
+    """Returns all past and active inspection orders for an institution."""
+    return [
+        o for o in mock_inspection_orders 
+        if o["permanent_id"].lower() == permanent_id.lower()
+    ]
 

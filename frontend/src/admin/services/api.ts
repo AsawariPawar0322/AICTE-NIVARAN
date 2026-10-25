@@ -11,6 +11,8 @@ import {
   OverlapCandidate,
   TimelineVerificationResult,
   CaseStageEvent,
+  InstitutionScorecardItem,
+  InspectionOrder,
 } from '../types';
 import {
   MOCK_COMPLAINTS,
@@ -1171,5 +1173,224 @@ export const apiService = {
       verification: await this.verifyTimeline(caseId),
       timeline: complaintsCache[cIdx]?.timeline || [],
     };
+  },
+
+  // ========================================================================
+  // Institution Grievance Scorecard & Inspection Prioritization
+  // ========================================================================
+
+  async getScorecards(params: { tier?: string; region?: string; search?: string } = {}): Promise<InstitutionScorecardItem[]> {
+    try {
+      const q = new URLSearchParams();
+      if (params.tier && params.tier !== 'ALL') q.set('tier', params.tier);
+      if (params.region && params.region !== 'ALL') q.set('region', params.region);
+      if (params.search) q.set('search', params.search);
+
+      const url = `http://localhost:8000/api/scorecards${q.toString() ? '?' + q.toString() : ''}`;
+      const resp = await fetch(url);
+      if (resp.ok) {
+        return await resp.json();
+      }
+    } catch {
+      // offline fallback
+    }
+
+    // Client-side fallback aggregation by Permanent ID
+    const grouped: Record<string, Complaint[]> = {};
+    for (const c of complaintsCache) {
+      const pid = c.institutionPermanentId || '1-10928341';
+      if (!grouped[pid]) grouped[pid] = [];
+      grouped[pid].push(c);
+    }
+
+    const items: InstitutionScorecardItem[] = institutionsCache.map((inst) => {
+      const pid = inst.permanentId;
+      const cases = grouped[pid] || [];
+      const active = cases.filter((c) => c.status !== 'RESOLVED' && c.status !== 'REJECTED');
+      const resolved = cases.filter((c) => c.status === 'RESOLVED');
+
+      const upheldIds = cases
+        .filter((c) => c.status === 'RESOLVED' || c.status === 'ACTION_IN_PROGRESS' || c.timeline.some((t) => t.stageName.toLowerCase().includes('refund')))
+        .map((c) => c.id);
+      const overdueCases = active.filter((c) => c.isOverdue || c.daysRemaining <= 0);
+      const overdueRate = active.length > 0 ? Math.round((overdueCases.length / active.length) * 100) : 0;
+      const reopened = cases.filter((c) => c.timeline.some((t) => t.isEscalated || t.stageName.toLowerCase().includes('dispute') || t.stageName.toLowerCase().includes('ombudsman')));
+
+      let overlapCount = 0;
+      cases.forEach((c) => {
+        if (c.relatedCaseIds && c.relatedCaseIds.length > overlapCount) {
+          overlapCount = c.relatedCaseIds.length;
+        }
+      });
+
+      const flaggedAtrCount = proofsCache.filter((p) => p.permanentId === pid && p.status === 'REJECTED').length;
+
+      // Transparent Rules
+      let score = 0;
+      const reasons: string[] = [];
+      const breakdown = {
+        overdue_points: 0,
+        reopened_points: 0,
+        upheld_points: 0,
+        overlap_points: 0,
+        evasive_atr_points: 0,
+      };
+
+      if (overdueRate >= 50) {
+        score += 25;
+        breakdown.overdue_points = 25;
+        reasons.push(`Critical Overdue Rate (${overdueRate}% exceed SLA)`);
+      } else if (overdueRate > 0) {
+        score += 15;
+        breakdown.overdue_points = 15;
+        reasons.push(`Overdue Rate (${overdueRate}%)`);
+      }
+
+      if (reopened.length > 0) {
+        const pts = Math.min(25, reopened.length * 12.5);
+        score += pts;
+        breakdown.reopened_points = pts;
+        reasons.push(`${reopened.length} Ombudsman dispute/escalations`);
+      }
+
+      if (upheldIds.length > 0) {
+        const pts = Math.min(20, upheldIds.length * 10);
+        score += pts;
+        breakdown.upheld_points = pts;
+        reasons.push(`${upheldIds.length} Substantive violations upheld`);
+      }
+
+      if (overlapCount >= 2) {
+        const pts = overlapCount >= 3 ? 15 : 10;
+        score += pts;
+        breakdown.overlap_points = pts;
+        reasons.push(`Systemic cluster: ${overlapCount} overlapping complaints`);
+      }
+
+      if (flaggedAtrCount > 0) {
+        const pts = flaggedAtrCount >= 2 ? 15 : 10;
+        score += pts;
+        breakdown.evasive_atr_points = pts;
+        reasons.push(`${flaggedAtrCount} ATRs flagged for evasive fake closure`);
+      }
+
+      if (reasons.length === 0) {
+        reasons.push('Satisfactory compliance record with zero major statutory SLA breaches.');
+      }
+
+      const finalScore = Math.min(100, Math.round(score));
+      let tier: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'ROUTINE' = 'ROUTINE';
+      let action = 'PERIODIC_COMPLIANCE_MONITORING';
+      let actionLabel = 'Periodic Compliance Monitoring';
+
+      if (finalScore >= 70) {
+        tier = 'CRITICAL';
+        action = 'MANDATE_SURPRISE_PHYSICAL_INSPECTION';
+        actionLabel = 'Mandate Surprise Physical Inspection';
+      } else if (finalScore >= 50) {
+        tier = 'HIGH';
+        action = 'ISSUE_STATUTORY_SHOW_CAUSE';
+        actionLabel = 'Issue Statutory Show-Cause Notice & Desk Audit';
+      } else if (finalScore >= 30) {
+        tier = 'MEDIUM';
+        action = 'NODAL_OFFICER_HEARING';
+        actionLabel = 'Summon Nodal Officer for Online Hearing';
+      }
+
+      return {
+        permanent_id: pid,
+        institution_name: inst.name,
+        city: inst.city,
+        state: inst.state,
+        region: inst.region || 'Western',
+        total_cases: cases.length,
+        active_cases: active.length,
+        resolved_cases: resolved.length,
+        upheld_complaints: upheldIds.length,
+        upheld_complaint_ids: upheldIds,
+        median_resolution_days: cases.length > 0 ? 14 : 7,
+        overdue_rate: overdueRate,
+        reopened_cases: reopened.length,
+        reopened_case_ids: reopened.map((r) => r.id),
+        overlap_count: overlapCount,
+        flagged_atr_count: flaggedAtrCount,
+        inspection_priority_score: finalScore,
+        priority_tier: tier,
+        recommended_action: action,
+        recommended_action_label: actionLabel,
+        score_breakdown: breakdown,
+        explainable_reasons: reasons,
+      };
+    });
+
+    items.sort((a, b) => b.inspection_priority_score - a.inspection_priority_score);
+    items.forEach((item, idx) => {
+      item.inspection_rank = idx + 1;
+    });
+
+    return items;
+  },
+
+  async getScorecardDetail(permanentId: string): Promise<InstitutionScorecardItem | null> {
+    try {
+      const resp = await fetch(`http://localhost:8000/api/scorecards/${permanentId}`);
+      if (resp.ok) {
+        return await resp.json();
+      }
+    } catch {
+      // offline fallback
+    }
+    const all = await this.getScorecards();
+    return all.find((s) => s.permanent_id.toLowerCase() === permanentId.toLowerCase()) || null;
+  },
+
+  async orderInspection(permanentId: string, orderData: {
+    officer_name: string;
+    inspection_type: string;
+    target_date: string;
+    terms_of_reference: string;
+    inspecting_team?: string[];
+  }) {
+    try {
+      const resp = await fetch(`http://localhost:8000/api/scorecards/${permanentId}/order-inspection`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData),
+      });
+      if (resp.ok) {
+        return await resp.json();
+      }
+    } catch {
+      // offline fallback
+    }
+
+    return {
+      success: true,
+      message: `Official ${orderData.inspection_type} inspection mandate issued for institution.`,
+      order: {
+        id: `INSP-2026-${Math.floor(100 + Math.random() * 900)}`,
+        permanent_id: permanentId,
+        institution_name: 'Approved Institute',
+        officer_name: orderData.officer_name,
+        inspection_type: orderData.inspection_type,
+        target_date: orderData.target_date,
+        terms_of_reference: orderData.terms_of_reference,
+        inspecting_team: orderData.inspecting_team || [orderData.officer_name],
+        status: 'ORDERED',
+        ordered_at: new Date().toISOString(),
+      },
+    };
+  },
+
+  async getInspectionOrders(permanentId: string): Promise<InspectionOrder[]> {
+    try {
+      const resp = await fetch(`http://localhost:8000/api/scorecards/${permanentId}/orders`);
+      if (resp.ok) {
+        return await resp.json();
+      }
+    } catch {
+      // offline fallback
+    }
+    return [];
   },
 };

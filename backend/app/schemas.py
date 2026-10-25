@@ -168,3 +168,50 @@ class SimulateTamperRequest(BaseModel):
     event_index: int = 2
     tampered_text: Optional[str] = "MALICIOUS AUDIT MODIFICATION: Disposed without physical inspection or refund clearance."
 
+
+# ==========================================================================
+# Institution Grievance Scorecard & Inspection Priority Schemas
+# ==========================================================================
+
+class ScoreBreakdown(BaseModel):
+    overdue_points: float = 0.0
+    reopened_points: float = 0.0
+    upheld_points: float = 0.0
+    overlap_points: float = 0.0
+    evasive_atr_points: float = 0.0
+
+
+class InstitutionScorecardItem(BaseModel):
+    permanent_id: str
+    institution_name: str
+    city: str
+    state: str
+    region: str
+    total_cases: int
+    active_cases: int
+    resolved_cases: int
+    upheld_complaints: int
+    upheld_complaint_ids: List[str] = []
+    median_resolution_days: float
+    overdue_rate: float
+    reopened_cases: int
+    reopened_case_ids: List[str] = []
+    overlap_count: int
+    flagged_atr_count: int
+    inspection_priority_score: int
+    priority_tier: Literal["CRITICAL", "HIGH", "MEDIUM", "ROUTINE"]
+    recommended_action: str
+    recommended_action_label: str
+    score_breakdown: ScoreBreakdown
+    explainable_reasons: List[str]
+    inspection_rank: Optional[int] = None
+
+
+class IssueInspectionOrderRequest(BaseModel):
+    permanent_id: str
+    officer_name: str
+    inspection_type: Literal["SURPRISE_PHYSICAL", "STATUTORY_SHOW_CAUSE", "DESK_AUDIT", "NODAL_HEARING"]
+    target_date: str
+    terms_of_reference: str
+    inspecting_team: List[str] = []
+

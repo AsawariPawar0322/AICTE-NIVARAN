@@ -272,3 +272,52 @@ export interface TimelineVerificationResult {
   expected_hash?: string | null;
   found_hash?: string | null;
 }
+
+export type InspectionPriorityTier = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'ROUTINE';
+
+export interface ScoreBreakdown {
+  overdue_points: number;
+  reopened_points: number;
+  upheld_points: number;
+  overlap_points: number;
+  evasive_atr_points: number;
+}
+
+export interface InstitutionScorecardItem {
+  permanent_id: string;
+  institution_name: string;
+  city: string;
+  state: string;
+  region: string;
+  total_cases: number;
+  active_cases: number;
+  resolved_cases: number;
+  upheld_complaints: number;
+  upheld_complaint_ids: string[];
+  median_resolution_days: number;
+  overdue_rate: number;
+  reopened_cases: number;
+  reopened_case_ids: string[];
+  overlap_count: number;
+  flagged_atr_count: number;
+  inspection_priority_score: number;
+  priority_tier: InspectionPriorityTier;
+  recommended_action: string;
+  recommended_action_label: string;
+  score_breakdown: ScoreBreakdown;
+  explainable_reasons: string[];
+  inspection_rank?: number;
+}
+
+export interface InspectionOrder {
+  id: string;
+  permanent_id: string;
+  institution_name: string;
+  officer_name: string;
+  inspection_type: 'SURPRISE_PHYSICAL' | 'STATUTORY_SHOW_CAUSE' | 'DESK_AUDIT' | 'NODAL_HEARING';
+  target_date: string;
+  terms_of_reference: string;
+  inspecting_team: string[];
+  status: string;
+  ordered_at: string;
+}
