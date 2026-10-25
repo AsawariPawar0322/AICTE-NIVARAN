@@ -4,6 +4,14 @@
 
 from typing import List, Dict, Any, Optional
 import datetime
+import copy
+
+from app.timeline_hasher import (
+    chain_events,
+    append_chained_event,
+    verify_timeline_integrity,
+    compute_event_hash,
+)
 
 # Seed database for AICTE Approved Institutions
 mock_institutions: List[Dict[str, Any]] = [
@@ -433,3 +441,136 @@ def get_past_atrs_for_institution(permanent_id: str) -> List[str]:
         for p in mock_resolution_proofs
         if p.get("permanent_id") == permanent_id and p.get("proposed_resolution_summary")
     ]
+
+
+# ==========================================================================
+# Cryptographic Hash-Chain Initialization & State Management
+# ==========================================================================
+
+# Pre-chain all grievances' timelines with sequential SHA-256 hashes
+for grv in mock_grievances:
+    if "timeline" in grv and grv["timeline"]:
+        grv["timeline"] = chain_events(grv["timeline"])
+
+# In-memory original backup snapshot to allow restoring authentic state after demo tampering
+authentic_timelines_backup: Dict[str, List[Dict[str, Any]]] = {
+    grv["id"]: copy.deepcopy(grv["timeline"])
+    for grv in mock_grievances
+    if "timeline" in grv and grv["timeline"]
+}
+
+
+def get_case_by_id(case_id: str) -> Optional[Dict[str, Any]]:
+    for g in mock_grievances:
+        if g["id"].lower() == case_id.lower():
+            return g
+    return None
+
+
+def verify_case_timeline(case_id: str) -> Dict[str, Any]:
+    case = get_case_by_id(case_id)
+    if not case:
+        return {
+            "case_id": case_id,
+            "is_valid": False,
+            "total_events_verified": 0,
+            "verification_status": "EMPTY_TIMELINE",
+            "message": f"Case {case_id} not found."
+        }
+    timeline = case.get("timeline", [])
+    result = verify_timeline_integrity(timeline)
+    result["case_id"] = case_id
+    return result
+
+
+def tamper_case_timeline(case_id: str, event_index: int, tampered_text: str) -> Dict[str, Any]:
+    """
+    Modifies an event's text at event_index WITHOUT re-computing hashes.
+    This simulates an unauthorized backdated database mutation or deletion.
+    """
+    case = get_case_by_id(case_id)
+    if not case:
+        return {"success": False, "message": f"Case {case_id} not found."}
+    
+    timeline = case.get("timeline", [])
+    if not timeline:
+        return {"success": False, "message": "Timeline is empty."}
+
+    idx = max(0, min(event_index - 1, len(timeline) - 1))
+    target_event = timeline[idx]
+    
+    # Intentionally corrupt the event payload
+    target_event["description"] = tampered_text
+    target_event["actionTaken"] = tampered_text
+    target_event["is_tampered"] = True
+    target_event["tampered_at"] = datetime.datetime.now().isoformat()
+
+    # Re-run verification to capture the cryptographic breakage immediately
+    verification = verify_timeline_integrity(timeline)
+    verification["case_id"] = case_id
+
+    return {
+        "success": True,
+        "message": f"Tampered event #{idx + 1} ('{target_event.get('title') or target_event.get('stageName')}'). Hashes were NOT updated.",
+        "tampered_event_id": target_event.get("id"),
+        "tampered_index": idx + 1,
+        "verification": verification
+    }
+
+
+def restore_case_timeline(case_id: str) -> Dict[str, Any]:
+    """Restores the authentic, untampered timeline snapshot from backup."""
+    case = get_case_by_id(case_id)
+    if not case:
+        return {"success": False, "message": f"Case {case_id} not found."}
+
+    if case_id in authentic_timelines_backup:
+        case["timeline"] = copy.deepcopy(authentic_timelines_backup[case_id])
+    else:
+        # Re-chain from scratch
+        case["timeline"] = chain_events(case.get("timeline", []))
+
+    verification = verify_timeline_integrity(case["timeline"])
+    verification["case_id"] = case_id
+
+    return {
+        "success": True,
+        "message": f"Authentic cryptographic hash-chain restored for case {case_id}.",
+        "verification": verification,
+        "timeline": case["timeline"]
+    }
+
+
+def add_chained_timeline_event(
+    case: Dict[str, Any],
+    title: str,
+    description: str,
+    actor: str,
+    role: str
+) -> Dict[str, Any]:
+    """Adds a new event to the case timeline and binds its SHA-256 hash to the head event."""
+    if "timeline" not in case:
+        case["timeline"] = []
+
+    new_event_raw = {
+        "id": f"t-{int(datetime.datetime.now().timestamp() * 1000)}",
+        "title": title,
+        "description": description,
+        "stageName": title,
+        "actionTaken": description,
+        "actor": actor,
+        "role": role,
+        "performedByName": actor,
+        "performedByRole": role,
+        "timestamp": datetime.datetime.now().strftime("%d %b %Y, %I:%M %p"),
+        "stage": case.get("current_stage", "IN_PROGRESS"),
+    }
+
+    chained_event = append_chained_event(case["timeline"], new_event_raw)
+    case["timeline"].append(chained_event)
+
+    # Update backup snapshot as well so newly appended valid events persist
+    if case["id"] in authentic_timelines_backup:
+        authentic_timelines_backup[case["id"]] = copy.deepcopy(case["timeline"])
+
+    return chained_event

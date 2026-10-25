@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { apiService } from '../services/api';
-import { Complaint, ComplaintStatus, BureauName } from '../types';
+import { Complaint, ComplaintStatus, BureauName, TimelineVerificationResult } from '../types';
 import { StatusChip, UrgencyBadge } from '../design-system/StatusChip';
 import { Button } from '../design-system/Button';
 import { Modal } from '../design-system/Modal';
@@ -22,6 +22,7 @@ import {
   HelpCircle,
   User,
   ShieldAlert,
+  ShieldCheck,
   Hash,
   Download,
   Calendar,
@@ -32,6 +33,10 @@ import {
   Sparkles,
   ExternalLink,
   AlertTriangle,
+  RefreshCw,
+  Eye,
+  EyeOff,
+  Binary,
 } from 'lucide-react';
 
 export const CaseDetail: React.FC = () => {
@@ -45,6 +50,13 @@ export const CaseDetail: React.FC = () => {
   const [liveMatches, setLiveMatches] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'overview' | 'evidence' | 'history' | 'related' | 'notes'>('overview');
   const [isLoading, setIsLoading] = useState(true);
+
+  // Cryptographic Timeline & Tamper-Evident Verification State
+  const [timelineVerification, setTimelineVerification] = useState<TimelineVerificationResult | null>(null);
+  const [isVerifyingTimeline, setIsVerifyingTimeline] = useState(false);
+  const [isSimulatingTamper, setIsSimulatingTamper] = useState(false);
+  const [isRestoringTimeline, setIsRestoringTimeline] = useState(false);
+  const [showHashDetails, setShowHashDetails] = useState(false);
 
   // Helper for POV badge rendering
   const renderPovBadge = (pov?: string, role?: string) => {
@@ -134,6 +146,14 @@ export const CaseDetail: React.FC = () => {
         } catch {
           setLiveMatches([]);
         }
+
+        // Cryptographically verify timeline
+        try {
+          const v = await apiService.verifyTimeline(id);
+          setTimelineVerification(v);
+        } catch {
+          // offline fallback
+        }
       }
     } catch (err) {
       console.error(err);
@@ -171,6 +191,89 @@ export const CaseDetail: React.FC = () => {
       </div>
     );
   }
+
+  // Cryptographic Timeline Actions
+  const handleVerifyTimeline = async () => {
+    if (!complaint) return;
+    setIsVerifyingTimeline(true);
+    try {
+      const res = await apiService.verifyTimeline(complaint.id);
+      setTimelineVerification(res);
+      if (res.is_valid) {
+        addToast({
+          type: 'success',
+          title: 'Timeline Cryptographically Verified',
+          message: `All ${res.total_events_verified} chronological events are sequentially bound via SHA-256. Zero unauthorized modifications detected.`,
+        });
+      } else {
+        addToast({
+          type: 'danger',
+          title: 'Tamper Detected in Audit Chain',
+          message: res.message,
+        });
+      }
+    } catch {
+      addToast({
+        type: 'danger',
+        title: 'Verification Failed',
+        message: 'Could not complete cryptographic hash chain traversal.',
+      });
+    } finally {
+      setIsVerifyingTimeline(false);
+    }
+  };
+
+  const handleSimulateTamper = async (eventIndex: number = 2) => {
+    if (!complaint) return;
+    setIsSimulatingTamper(true);
+    try {
+      const res = await apiService.simulateTimelineTamper(
+        complaint.id,
+        eventIndex,
+        'MALICIOUS AUDIT MODIFICATION: Case closed without physical site inspection or institutional refund compliance.'
+      );
+      const updated = await apiService.getComplaintById(complaint.id);
+      if (updated) setComplaint(updated);
+      setTimelineVerification(res.verification);
+      addToast({
+        type: 'warning',
+        title: 'Tamper Simulation Active',
+        message: `Event #${eventIndex} text altered in database without recalculating cryptographic hashes. Immediate hash mismatch detected!`,
+      });
+    } catch {
+      addToast({
+        type: 'danger',
+        title: 'Tamper Simulation Failed',
+        message: 'Could not simulate database tampering.',
+      });
+    } finally {
+      setIsSimulatingTamper(false);
+    }
+  };
+
+  const handleRestoreTimeline = async () => {
+    if (!complaint) return;
+    setIsRestoringTimeline(true);
+    try {
+      const res = await apiService.restoreTimelineChain(complaint.id);
+      const updated = await apiService.getComplaintById(complaint.id);
+      if (updated) setComplaint(updated);
+      setTimelineVerification(res.verification);
+      addToast({
+        type: 'success',
+        title: 'Authentic Audit Chain Restored',
+        message: 'All timeline events reverted to authentic signed state. SHA-256 hash-chain verified from Genesis root.',
+      });
+    } catch {
+      addToast({
+        type: 'danger',
+        title: 'Restore Failed',
+        message: 'Could not restore authentic timeline snapshot.',
+      });
+    } finally {
+      setIsRestoringTimeline(false);
+    }
+  };
 
   // Action Handlers
   const handleRequestInfo = async (e: React.FormEvent) => {
@@ -682,60 +785,235 @@ export const CaseDetail: React.FC = () => {
 
       {/* Tab 3: History & Stage Timeline */}
       {activeTab === 'history' && (
-        <div className="bg-white border border-[#CBD2DC] rounded-[8px] p-5 space-y-4">
-          <div className="pb-3 border-b border-[#CBD2DC]">
-            <h3 className="text-sm font-bold text-[#0B2A5B] uppercase tracking-wide flex items-center gap-1.5">
-              <GitCommit className="w-4 h-4 text-[#1F5FBF]" />
-              Official Chronological Stage &amp; Accountability Timeline
-            </h3>
-            <p className="text-xs text-[#4B5565] mt-0.5">
-              Immutable log of bureau handoffs, actions taken, strict deadlines, and escalation triggers.
-            </p>
+        <div className="bg-white border border-[#CBD2DC] rounded-[8px] p-5 space-y-5">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#CBD2DC]">
+            <div>
+              <h3 className="text-sm font-bold text-[#0B2A5B] uppercase tracking-wide flex items-center gap-1.5">
+                <GitCommit className="w-4 h-4 text-[#1F5FBF]" />
+                Official Chronological Stage &amp; Accountability Timeline
+              </h3>
+              <p className="text-xs text-[#4B5565] mt-0.5">
+                Sequential SHA-256 Merkle hash chain preventing retroactive record modification, silent case dismissal, or SLA evasion.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowHashDetails(!showHashDetails)}
+                className="flex items-center gap-1 text-xs"
+              >
+                {showHashDetails ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                {showHashDetails ? 'Hide Hashes' : 'Inspect Cryptographic Hashes'}
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleVerifyTimeline}
+                disabled={isVerifyingTimeline}
+                className="flex items-center gap-1.5 text-xs bg-[#0B2A5B] hover:bg-[#1F5FBF]"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isVerifyingTimeline ? 'animate-spin' : ''}`} />
+                {isVerifyingTimeline ? 'Verifying Hashes...' : 'Verify Chain Integrity'}
+              </Button>
+            </div>
           </div>
 
-          <div className="relative pl-6 space-y-6 before:content-[''] before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-[2px] before:bg-[#CBD2DC]">
-            {complaint.timeline.map((stage, idx) => (
-              <div key={stage.id} className="relative">
-                {/* Timeline node */}
-                <div className={`absolute -left-[19px] top-1 w-3 h-3 rounded-full border-2 border-white ${
-                  stage.isEscalated ? 'bg-[#B91C1C]' : 'bg-[#1F5FBF]'
-                }`} />
-
-                <div className="p-3.5 border border-[#CBD2DC] rounded-[6px] bg-[#F3F5F8] space-y-1.5">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-bold text-xs text-[#0B2A5B] flex items-center gap-1.5">
-                      {stage.stageName}
-                      {stage.isEscalated && (
-                        <span className="text-[10px] px-1.5 py-0.2 bg-[#FEE2E2] text-[#B91C1C] border border-[#FCA5A5] rounded font-bold">
-                          ESCALATED
-                        </span>
-                      )}
+          {/* Cryptographic Verification Card */}
+          <div className={`p-4 rounded-[6px] border ${
+            timelineVerification?.is_valid
+              ? 'bg-[#F0FDF4] border-[#86EFAC]'
+              : timelineVerification?.verification_status === 'TAMPER_DETECTED' || timelineVerification?.verification_status === 'BROKEN_LINKAGE'
+              ? 'bg-[#FEF2F2] border-[#FCA5A5]'
+              : 'bg-[#F8FAFC] border-[#CBD2DC]'
+          }`}>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
+                  timelineVerification?.is_valid
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : timelineVerification
+                    ? 'bg-red-100 text-red-700'
+                    : 'bg-blue-100 text-blue-700'
+                }`}>
+                  {timelineVerification?.is_valid ? (
+                    <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                  ) : timelineVerification ? (
+                    <ShieldAlert className="w-5 h-5 text-red-600" />
+                  ) : (
+                    <Binary className="w-5 h-5 text-blue-600" />
+                  )}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-xs text-[#0B2A5B]">
+                      Cryptographic Audit Trail Status:
                     </span>
-                    <span className="text-[11px] text-[#4B5565] font-mono">
-                      {new Date(stage.timestamp).toLocaleString()}
-                    </span>
+                    {timelineVerification?.is_valid ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                        <CheckCircle className="w-3 h-3 text-emerald-600" />
+                        CRYPTOGRAPHICALLY VERIFIED · ZERO TAMPERING DETECTED
+                      </span>
+                    ) : timelineVerification ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-red-100 text-red-800 border border-red-300">
+                        <AlertOctagon className="w-3 h-3 text-red-600" />
+                        TAMPER DETECTED · MATHEMATICAL HASH MISMATCH AT EVENT #{timelineVerification.broken_at_index}
+                      </span>
+                    ) : (
+                      <span className="text-[11px] font-mono text-gray-500">Evaluating...</span>
+                    )}
                   </div>
-
-                  <p className="text-xs text-[#1A1F2B] font-medium leading-relaxed">
-                    {stage.actionTaken}
+                  <p className="text-xs text-[#374151] mt-1 font-medium leading-relaxed">
+                    {timelineVerification?.message || 'Inspecting chronological block hashes against official AICTE vault...'}
                   </p>
+                </div>
+              </div>
 
-                  <div className="flex flex-wrap items-center gap-4 text-[11px] text-[#4B5565] pt-1 border-t border-[#CBD2DC]/60">
-                    <div>
-                      <span className="font-semibold text-[#1A1F2B]">Actor:</span> {stage.performedByName} ({stage.performedByRole})
+              {/* Demo actions for SIH Evaluators */}
+              <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                {timelineVerification?.is_valid ? (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleSimulateTamper(2)}
+                    disabled={isSimulatingTamper}
+                    className="border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 text-xs flex items-center gap-1.5"
+                    title="Simulate unauthorized database record alteration without recalculating hash chain"
+                  >
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                    {isSimulatingTamper ? 'Simulating...' : 'Simulate Tampering (Judge Demo)'}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleRestoreTimeline}
+                    disabled={isRestoringTimeline}
+                    className="border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 text-xs flex items-center gap-1.5"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 text-emerald-600 ${isRestoringTimeline ? 'animate-spin' : ''}`} />
+                    {isRestoringTimeline ? 'Restoring Chain...' : 'Restore Authentic Chain'}
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Cryptographic Key Details Strip */}
+            <div className="mt-3 pt-2.5 border-t border-black/5 grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px] font-mono">
+              <div className="flex items-center gap-2 bg-white/70 p-1.5 rounded border border-black/5">
+                <span className="text-gray-500 font-sans font-bold">Genesis Root:</span>
+                <span className="text-[#0B2A5B] truncate" title={timelineVerification?.genesis_root || 'N/A'}>
+                  {timelineVerification?.genesis_root ? `0x${timelineVerification.genesis_root}` : '0x0000000000000000...'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 bg-white/70 p-1.5 rounded border border-black/5">
+                <span className="text-gray-500 font-sans font-bold">Head Digest:</span>
+                <span className="text-[#0B2A5B] truncate" title={timelineVerification?.head_hash || 'N/A'}>
+                  {timelineVerification?.head_hash ? `0x${timelineVerification.head_hash}` : '0x0000000000000000...'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Timeline Nodes */}
+          <div className="relative pl-6 space-y-6 before:content-[''] before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-[2px] before:bg-[#CBD2DC]">
+            {complaint.timeline.map((stage, idx) => {
+              const eventNum = stage.eventIndex || idx + 1;
+              const isTamperedEvent = stage.is_tampered || (timelineVerification && !timelineVerification.is_valid && timelineVerification.broken_at_index === eventNum);
+
+              return (
+                <div key={stage.id} className="relative">
+                  {/* Timeline node icon */}
+                  <div className={`absolute -left-[19px] top-1 w-3.5 h-3.5 rounded-full border-2 border-white ${
+                    isTamperedEvent
+                      ? 'bg-[#B91C1C] ring-4 ring-red-200 animate-pulse'
+                      : stage.isGenesisRoot || idx === 0
+                      ? 'bg-[#0B2A5B]'
+                      : stage.isEscalated
+                      ? 'bg-[#B91C1C]'
+                      : 'bg-[#1F5FBF]'
+                  }`} />
+
+                  <div className={`p-3.5 border rounded-[6px] space-y-2 transition-all ${
+                    isTamperedEvent
+                      ? 'border-red-400 bg-red-50/70 shadow-sm'
+                      : 'border-[#CBD2DC] bg-[#F3F5F8]'
+                  }`}>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-[#E2E8F0] text-[#1E293B]">
+                          Event #{eventNum}
+                        </span>
+                        {stage.isGenesisRoot || idx === 0 ? (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                            GENESIS ROOT
+                          </span>
+                        ) : null}
+                        <span className="font-bold text-xs text-[#0B2A5B] flex items-center gap-1.5">
+                          {stage.stageName}
+                          {stage.isEscalated && (
+                            <span className="text-[10px] px-1.5 py-0.2 bg-[#FEE2E2] text-[#B91C1C] border border-[#FCA5A5] rounded font-bold">
+                              ESCALATED
+                            </span>
+                          )}
+                        </span>
+                        {isTamperedEvent && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-800 border border-red-300 flex items-center gap-1">
+                            <AlertTriangle className="w-3 h-3 text-red-600" />
+                            PAYLOAD TAMPER DETECTED
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[11px] text-[#4B5565] font-mono">
+                        {new Date(stage.timestamp).toLocaleString()}
+                      </span>
                     </div>
-                    <div>
-                      <span className="font-semibold text-[#1A1F2B]">Next Expected Step:</span> {stage.nextExpectedStep}
+
+                    <p className={`text-xs font-medium leading-relaxed ${
+                      isTamperedEvent ? 'text-red-900 font-bold bg-red-100/70 p-2 rounded border border-red-200' : 'text-[#1A1F2B]'
+                    }`}>
+                      {stage.actionTaken}
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-4 text-[11px] text-[#4B5565] pt-1 border-t border-[#CBD2DC]/60">
+                      <div>
+                        <span className="font-semibold text-[#1A1F2B]">Actor:</span> {stage.performedByName} ({stage.performedByRole})
+                      </div>
+                      <div>
+                        <span className="font-semibold text-[#1A1F2B]">Next Expected Step:</span> {stage.nextExpectedStep}
+                      </div>
+                      {stage.deadlineDate && (
+                        <div className="font-mono text-[#C2570C]">
+                          <span className="font-semibold text-[#1A1F2B]">Target SLA:</span> {stage.deadlineDate.split('T')[0]}
+                        </div>
+                      )}
                     </div>
-                    {stage.deadlineDate && (
-                      <div className="font-mono text-[#C2570C]">
-                        <span className="font-semibold text-[#1A1F2B]">Target SLA:</span> {stage.deadlineDate.split('T')[0]}
+
+                    {/* Cryptographic Linkage Details (shown when toggled or if tampered) */}
+                    {(showHashDetails || isTamperedEvent) && (
+                      <div className="mt-2 pt-2 border-t border-dashed border-[#CBD2DC] bg-white/60 p-2 rounded text-[10px] font-mono space-y-1">
+                        <div className="flex items-center gap-2 truncate">
+                          <span className="text-gray-500 font-semibold w-24 shrink-0">Previous Hash:</span>
+                          <span className="text-gray-700 truncate">{stage.previousHash || '0000000000000000000000000000000000000000000000000000000000000000'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 truncate">
+                          <span className="text-gray-500 font-semibold w-24 shrink-0">Event Digest:</span>
+                          <span className={`truncate font-bold ${isTamperedEvent ? 'text-red-700' : 'text-[#0B2A5B]'}`}>
+                            {stage.currentHash || 'SHA-256 Digest'}
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-gray-500 font-sans italic">
+                          {eventNum === 1
+                            ? 'Root block: Bound to genesis zero hash.'
+                            : `Merkle linkage: Bound to Event #${eventNum - 1} hash.`}
+                        </div>
                       </div>
                     )}
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

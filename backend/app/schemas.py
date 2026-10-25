@@ -144,3 +144,27 @@ class AtrScrutinyDecisionRequest(BaseModel):
     officer_name: str
     remarks: str
 
+
+# ==========================================================================
+# Tamper-Evident Timeline Schemas
+# ==========================================================================
+
+class TimelineVerificationResponse(BaseModel):
+    case_id: str
+    is_valid: bool
+    total_events_verified: int = 0
+    genesis_root: Optional[str] = None
+    head_hash: Optional[str] = None
+    verification_status: Literal["CRYPTOGRAPHICALLY_VERIFIED", "TAMPER_DETECTED", "BROKEN_LINKAGE", "EMPTY_TIMELINE"]
+    message: str
+    broken_at_index: Optional[int] = None
+    broken_event_id: Optional[str] = None
+    broken_event_title: Optional[str] = None
+    expected_hash: Optional[str] = None
+    found_hash: Optional[str] = None
+
+
+class SimulateTamperRequest(BaseModel):
+    event_index: int = 2
+    tampered_text: Optional[str] = "MALICIOUS AUDIT MODIFICATION: Disposed without physical inspection or refund clearance."
+

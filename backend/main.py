@@ -14,7 +14,12 @@ from app.database import (
     mock_otp_sessions,
     mock_messages,
     mock_resolution_proofs,
-    get_past_atrs_for_institution
+    get_past_atrs_for_institution,
+    verify_case_timeline,
+    tamper_case_timeline,
+    restore_case_timeline,
+    add_chained_timeline_event,
+    get_case_by_id
 )
 from app.schemas import (
     SendOtpRequest,
@@ -30,7 +35,9 @@ from app.schemas import (
     LinkActionRequest,
     AtrEvaluationRequest,
     AtrQualityResult,
-    AtrScrutinyDecisionRequest
+    AtrScrutinyDecisionRequest,
+    TimelineVerificationResponse,
+    SimulateTamperRequest
 )
 from app.matcher import analyze_grievance_overlap, find_all_overlap_candidates
 from app.atr_validator import evaluate_atr_quality
@@ -263,15 +270,13 @@ def verify_closure_otp(case_id: str, req: VerifyClosureOtpRequest):
         "citizen_feedback": req.citizen_feedback,
         "rating": req.satisfaction_rating
     }
-    target["timeline"].append({
-        "id": f"t-close-{int(datetime.datetime.now().timestamp())}",
-        "title": "Case Formally Disposed & Citizen OTP Verified",
-        "description": "Complainant verified satisfaction via 6-digit OTP. AICTE Certificate generated.",
-        "actor": target["complainant_name"],
-        "role": "Citizen Verification",
-        "timestamp": "Just now",
-        "stage": "RESOLVED"
-    })
+    _add_timeline_event(
+        target,
+        "Case Formally Disposed & Citizen OTP Verified",
+        "Complainant verified satisfaction via 6-digit OTP. AICTE Certificate generated.",
+        target["complainant_name"],
+        "Citizen Verification"
+    )
     
     return {
         "success": True,
@@ -292,15 +297,13 @@ def escalate_to_ombudsman(case_id: str, req: EscalateRequest):
         raise HTTPException(status_code=404, detail="Case not found")
         
     target["current_stage"] = "ESCALATED"
-    target["timeline"].append({
-        "id": f"t-esc-{int(datetime.datetime.now().timestamp())}",
-        "title": "Escalated to State Technical Ombudsman",
-        "description": f"Citizen rejected resolution: '{req.dissatisfied_reason}'. Reopened for Ombudsman inquiry.",
-        "actor": target["complainant_name"],
-        "role": "Citizen Rejection",
-        "timestamp": "Just now",
-        "stage": "ESCALATED"
-    })
+    _add_timeline_event(
+        target,
+        "Escalated to State Technical Ombudsman",
+        f"Citizen rejected resolution: '{req.dissatisfied_reason}'. Reopened for Ombudsman inquiry.",
+        target["complainant_name"],
+        "Citizen Rejection"
+    )
     
     return {
         "success": True,
@@ -336,15 +339,7 @@ def _new_id(prefix: str) -> str:
     return f"{prefix}-{int(datetime.datetime.now().timestamp() * 1000)}-{random.randint(100, 999)}"
 
 def _add_timeline_event(case: Dict[str, Any], title: str, description: str, actor: str, role: str):
-    case["timeline"].append({
-        "id": _new_id("t"),
-        "title": title,
-        "description": description,
-        "actor": actor,
-        "role": role,
-        "timestamp": "Just now",
-        "stage": case["current_stage"]
-    })
+    return add_chained_timeline_event(case, title, description, actor, role)
 
 @app.get("/api/inbox")
 def get_inbox(
@@ -745,4 +740,49 @@ def record_atr_scrutiny_decision(req: AtrScrutinyDecisionRequest):
             "status": "DISPUTED",
             "message": f"Dispute recorded. Case {req.complaint_id} escalated to Ombudsman tier."
         }
+
+
+# ==========================================================================
+# Tamper-Evident Timeline Cryptographic Verification Endpoints
+# ==========================================================================
+
+@app.get("/api/timeline/{case_id}/verify", response_model=TimelineVerificationResponse)
+def verify_timeline(case_id: str):
+    """
+    Cryptographically verifies the SHA-256 hash chain of the grievance timeline.
+    Checks each block's predecessor pointer and verifies payload integrity from Genesis to Head.
+    """
+    case = get_case_by_id(case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail=f"Case {case_id} not found")
+
+    res = verify_case_timeline(case_id)
+    return res
+
+
+@app.post("/api/timeline/{case_id}/simulate-tamper")
+def simulate_tamper(case_id: str, req: SimulateTamperRequest):
+    """
+    Simulates unauthorized alteration of an event in the timeline (e.g. backdated remark).
+    Demonstrates how the mathematical hash chain immediately detects tampering.
+    """
+    case = get_case_by_id(case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail=f"Case {case_id} not found")
+
+    result = tamper_case_timeline(case_id, req.event_index, req.tampered_text)
+    return result
+
+
+@app.post("/api/timeline/{case_id}/restore-chain")
+def restore_timeline(case_id: str):
+    """
+    Restores the authentic, verified cryptographic hash chain from secure snapshot.
+    """
+    case = get_case_by_id(case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail=f"Case {case_id} not found")
+
+    result = restore_case_timeline(case_id)
+    return result
 

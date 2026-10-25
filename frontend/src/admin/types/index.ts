@@ -54,6 +54,12 @@ export interface CaseStageEvent {
   deadlineDate: string;
   isEscalated?: boolean;
   remarks?: string;
+  // Cryptographic Audit Trail
+  eventIndex?: number;
+  isGenesisRoot?: boolean;
+  previousHash?: string;
+  currentHash?: string;
+  is_tampered?: boolean;
 }
 
 export interface InternalNote {
@@ -250,4 +256,19 @@ export interface AnalyticsSummary {
   monthlyTrend: { month: string; received: number; resolved: number }[];
   statusDistribution: { status: string; count: number }[];
   regionDistribution: { region: string; count: number }[];
+}
+
+export interface TimelineVerificationResult {
+  case_id: string;
+  is_valid: boolean;
+  total_events_verified: number;
+  genesis_root?: string | null;
+  head_hash?: string | null;
+  verification_status: 'CRYPTOGRAPHICALLY_VERIFIED' | 'TAMPER_DETECTED' | 'BROKEN_LINKAGE' | 'EMPTY_TIMELINE';
+  message: string;
+  broken_at_index?: number | null;
+  broken_event_id?: string | null;
+  broken_event_title?: string | null;
+  expected_hash?: string | null;
+  found_hash?: string | null;
 }
