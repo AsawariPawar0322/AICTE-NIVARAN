@@ -113,7 +113,8 @@ Relations are by embedding (nested objects/arrays) or by matching strings; there
 - `DiscordMember`: `id, name, roleTag, roleColor, isOnline, statusText?`
 
 ### Other UI types
-- `ActiveTab` (in `components/Navbar.tsx`): `'home' | 'dashboard' | 'file-complaint' | 'track' | 'chat' | 'discord' | 'login' | 'admin-inbox'`
+- `ActiveTab` (in `components/Navbar.tsx`, mirrored by `VALID_TABS` in `App.tsx`): `'home' | 'citizen' | 'admin' | 'dashboard' | 'file-complaint' | 'track' | 'chat' | 'discord' | 'login' | 'citizen-login' | 'admin-login' | 'admin-inbox'`
+- `AdminTab` (in `views/AdministrationView.tsx`): `'ledger' | 'clusters' | 'institutions' | 'escalations' | 'messages'`
 - `Language` (in `locales/translations.ts`): `'en' | 'hi'`
 - Current user (inline type in `App.tsx`): `{ name, role, institution?, rollOrId?, mobile? }`
 

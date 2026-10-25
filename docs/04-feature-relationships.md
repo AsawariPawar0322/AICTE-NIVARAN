@@ -61,39 +61,37 @@ Note that neither FE nor BE currently prevents OTP closure or escalation from a 
 
 ## 3. Navigation graph
 
-Arrows are `setActiveTab(...)` calls.
+Arrows are `setActiveTab(...)` calls (`App.handleTabChange`, which also sets the URL hash).
 
 ```mermaid
 flowchart LR
-    Home["home<br/>LandingPage"]
-    Dash["dashboard<br/>ComplainantDashboard"]
-    File["file-complaint<br/>FileComplaintView"]
-    Track["track<br/>TrackComplaintView"]
-    Chat["chat<br/>UserAdminChatView"]
-    Disc["discord<br/>DiscordReplicaView"]
-    Login["login<br/>LoginView"]
-    Inbox["admin-inbox<br/>AdminInboxView"]
+    Home["#home<br/>LandingPage"]
+    CLogin["#citizen-login<br/>CitizenLoginView"]
+    ALogin["#admin-login<br/>AdminLoginView"]
+    Dash["#dashboard<br/>ComplainantDashboard"]
+    File["#file-complaint<br/>FileComplaintView"]
+    Track["#track<br/>TrackComplaintView"]
+    Admin["#admin / #admin-inbox<br/>AdministrationView<br/>(+ Support Inbox sub-tab)"]
+    Float(["FloatingOfficialChat<br/>(overlay, any page)"])
+    Chat["#chat<br/>UserAdminChatView"]
+    Disc["#discord<br/>DiscordReplicaView"]
 
-    Home -->|"File card / category / pick institution"| File
-    Home -->|Track card| Track
-    Dash -->|New grievance| File
-    Dash -->|Community| Disc
+    Home -->|"File / pick institution"| File
+    Home -->|Track| Track
+    Home -->|Citizen gateway| CLogin
+    CLogin -->|"citizen login"| Dash
+    CLogin -->|guest tracking| Track
+    CLogin -->|"official? sign in here"| ALogin
+    ALogin -->|"officer / nodal login"| Admin
     Dash -->|"Track (selects case)"| Track
-    Dash -->|"Chat (selects case)"| Chat
-    File -->|success: Track| Track
-    File -->|success: Chat| Chat
-    File -->|step 1 back| Home
-    Track -->|Discord promo| Disc
-    Track -->|Chat| Chat
-    Chat -->|back| Track
-    Disc -->|back| Dash
-    Login -->|"student / nodal login"| Dash
-    Login -->|"officer login"| Inbox
-    Login -->|guest tracking| Track
-    Inbox -->|"Open full case (selects case)"| Track
+    Dash -->|"Chat (selects case)"| Float
+    Track -->|Chat| Float
+    Admin -->|"Message / Launch Officer Chat → Support Inbox"| Admin
+    Admin -->|"Open full case (selects case)"| Track
+    Admin -->|Bureau Discord Hub| Disc
 ```
 
-The navbar (F2) reaches every tab available to the current role; the footer links to the complainant tabs. HeaderStrip's sign-in goes to `login`; its role switch goes to `admin-inbox` (official) or from the inbox back to `dashboard` (complainant).
+The navbar reaches Home, Citizen Portal (sub-nav: My Grievances / File / Track), Discord, the floating Officer Chat, and Administration (login screen unless an official is signed in). The header role pill goes to `#admin` / `#admin-login` (official) or `#home` (complainant); the logo goes home.
 
 ## 4. Shared state and who touches it
 
@@ -138,9 +136,9 @@ The navbar (F2) reaches every tab available to the current role; the footer link
 | `FileComplaintView.handleSubmitFinal` | `POST /api/grievances` |
 | `TrackComplaintView.handleVerifyOtp` | `POST /api/grievances/{id}/verify-closure-otp` |
 | `TrackComplaintView.handleEscalateToOmbudsman` | `POST /api/grievances/{id}/escalate` |
-| `LoginView.handleSendOtp` / `handleVerifyOtp` | `POST /api/auth/send-otp`, `/api/auth/verify-otp` |
-| `LoginView.loginDemoPersona` / `handleOfficialLogin` | `POST /api/auth/login` (`is_demo: true`) |
-| `UserAdminChatView.handleSend`, `AdminInboxView.handleSendReply` / `handleSendClarification` / `handleSendRequest` | `POST /api/grievances/{id}/messages` |
+| `CitizenLoginView.handleSendOtp` / `handleVerifyOtp` | `POST /api/auth/send-otp`, `/api/auth/verify-otp` |
+| `AdminLoginView.handleDemoPersona` / `handleLogin`, `CitizenLoginView.handleDemoLogin` | `POST /api/auth/login` (`is_demo: true`) |
+| `FloatingOfficialChat.sendMessage`, `UserAdminChatView.handleSend`, `AdminInboxView.handleSendReply` / `handleSendClarification` / `handleSendRequest` | `POST /api/grievances/{id}/messages` |
 | `AdminInboxView` list (`summaries`, filters, search) | `GET /api/inbox?filter=&search=` |
 | thread contents | `GET /api/grievances/{id}/messages` |
 | `App.handleMarkThreadRead` | `POST /api/grievances/{id}/messages/read` |

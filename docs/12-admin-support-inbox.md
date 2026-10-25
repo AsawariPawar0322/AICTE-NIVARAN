@@ -2,6 +2,14 @@ imp# 12 · Admin Panel: Messages / Support Inbox (implementation plan)
 
 **Status:** Implemented on 2026-10-25 (steps 1–6 and 8). Step 7 (frontend calling the backend routes) waits for plan Phase 2. Verified with a headless-browser run of the demo flow (41 checks) and curl against every new route.
 
+**After merging main's UI rework (`ee6cebb`)**
+- The inbox is no longer a top-level tab: it is the **Support Inbox** sub-tab of main's `AdministrationView` (`#admin`), rendered by `App` and passed in as `messagesPanel` (`AdminInboxView` with `embedded`). `#admin-inbox` opens the portal on that sub-tab.
+- The admin portal's *Launch Officer Chat* and per-case *Chat* buttons open the inbox on that case.
+- Main's `FloatingOfficialChat` is the complainant's main chat; it was ported to per-complaint conversations, document-request uploads and attachments, and its fake officer replies were removed. `UserAdminChatView` stays as the `#chat` full-page fallback.
+- Main's `LoginView` replacement (`CitizenLoginView`, `AdminLoginView`) is kept; officers land on `#admin`.
+- Unread badges moved onto main's navbar buttons: *Officer Chat* (complainant) and *Administration* (official). Signed-in officials skip the admin login screen.
+- Verified on the merged UI with a 36-check browser run.
+
 **Differences from the original design**
 - Selection is stored as `selectedComplaintId` in `App` (not an object), so the tracker, chat and inbox always show live data. This also fixed gaps B1 and B2.
 - `appendTimelineEvent` became the module helper `withTimelineEvent` plus `NewTimelineEvent` in `types/index.ts`; `handleUpdateComplaintStage` takes an optional event.

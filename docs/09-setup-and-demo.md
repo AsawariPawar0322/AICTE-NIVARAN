@@ -44,7 +44,7 @@ Open http://localhost:8000/docs for Swagger UI. Run uvicorn from inside `backend
 | Resolved case | `AICTE-2026-GRV-65021` |
 | Conversation with 2 unread messages + a pending document request | `AICTE-2026-GRV-79114` (Pooja Kulkarni) |
 
-The Login tab has one-click "SIH Evaluator Quick-Logins" for all three personas. The "AICTE Official" quick-login opens the Support Inbox.
+Citizen login (`#citizen-login`) has a one-click demo login for Aarav Sharma; the admin login (`#admin-login`, via the navbar **Administration** button) has one-click personas for Dr. Verma and Prof. Rao. The site opens on `#home`.
 
 Data resets on page reload, so you can repeat the demo.
 
@@ -62,12 +62,12 @@ Data resets on page reload, so you can repeat the demo.
 | 3:30 | Track `…84920` | Show the 6-stage stepper and the institute's ATR (₹44,000 refund, UTR) | "The college says it is resolved. But it cannot close the case itself." |
 | 4:00 | Track | Enter `849210` → certificate | **Critical feature:** "Only the complainant's OTP closes the case." |
 | 4:30 | Track (reload, then `…84920` again) | Instead click "Reject & Escalate to Ombudsman", enter a reason, confirm | "Rejection goes straight to the State Technical Ombudsman, on the record." |
-| 5:00 | Header → **AICTE Official** | Navbar shows **Support Inbox (2)**. Open **Pooja Kulkarni · 79114**: unread messages, pending document request, case panel on the right | "Officials see every complainant conversation next to the case it belongs to." |
+| 5:00 | Navbar → **Administration** → persona *Dr. Ramesh Chandra Verma* | Admin portal opens; the Administration button shows **2** unread. Click the **Support Inbox** sub-tab, open **Pooja Kulkarni · 79114**: unread messages, pending document request, case panel | "Officials see every complainant conversation next to the case it belongs to." |
 | 5:20 | Inbox composer | **Clarification**: "PFMS freeze is on the institute's side; nodal officer notified." Then **Request documents**: tick *Fee payment receipt*, send | "Clarifications and document requests go on the official record." |
-| 5:40 | Header → **Complainant**, **Official Chatbox** | The same case opens; upload any file on the request card → it shows *Submitted* | "Uploads are SHA-256 hashed in the browser and attached to the case." |
-| 6:00 | Header → **AICTE Official** → **Open full case** | Tracker shows the new evidence file and the timeline events | "Every message, request and upload is attached to the complaint and its audit trail — nothing lives in personal email." |
+| 5:40 | Header → **Complainant**, navbar **Officer Chat** | The floating chat opens on the same case; upload any file on the request card → it shows *Submitted* | "Uploads are SHA-256 hashed in the browser and attached to the case." |
+| 6:00 | Header → **AICTE Official** → Support Inbox → **Open full case** | Tracker shows the new evidence file and the timeline events | "Every message, request and upload is attached to the complaint and its audit trail — nothing lives in personal email." |
 | 6:20 | Discord | Type `/status` | "Community hub with bot lookups for students who need peer help." |
-| 6:40 | Login | Show evaluator quick-logins | Close on roadmap: official triage dashboard, real matching, database. |
+| 6:40 | Admin portal → Intelligent Case Linker | Show the institution clusters (illustrative) | Close on roadmap: real matching, database, access control. |
 
 This runs about 7 minutes; for a 5-minute slot, drop the escalation step (4:30) and Discord.
 
@@ -85,7 +85,8 @@ This runs about 7 minutes; for a 5-minute slot, drop the escalation step (4:30) 
 | `npm run dev` fails on Node version | Use Node 20 or newer |
 | `ModuleNotFoundError: app` when starting backend | Run `uvicorn` from inside `backend/` |
 | `fastapi.testclient` raises a missing `httpx` error | `pip install httpx`, or test with `curl` |
-| Chat tab shows nothing | A complaint must be selected; open chat from the dashboard or tracker |
-| No Chatbox / File a Complaint tab | You are in official mode; switch the header pill to **Complainant** |
+| `#chat` shows nothing | A complaint must be selected; use the navbar **Officer Chat** button instead |
+| Administration keeps asking to sign in | Expected until you sign in as an official persona; after that the button opens the portal directly |
+| Admin sub-tabs | The **Support Inbox** tab is the last one in the admin sub-nav (it wraps to a second line on narrow screens) |
 | Upload fails with "secure context" | Web Crypto needs https or `localhost`; don't open the dev server via a LAN IP |
 | Officer replies don't appear by themselves | Expected: there are no automatic replies; answer from the Support Inbox |

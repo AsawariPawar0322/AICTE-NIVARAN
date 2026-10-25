@@ -7,7 +7,7 @@
 | UI framework | React | ^19.3.1 |
 | Language | TypeScript | ~6.0.3 |
 | Build/dev server | Vite (+ `@vitejs/plugin-react`) | ^8.3.4 |
-| Icons | lucide-react | ^1.61.0 |
+| Icons | lucide-react, @phosphor-icons/react (via `components/Icon.tsx`) | ^1.61.0, ^2.1.10 |
 | Lint | oxlint (react, typescript, oxc plugins) | ^1.88.0 |
 | Fonts | Google Fonts: Noto Sans, Noto Sans Devanagari, Noto Sans Mono | — |
 | Backend framework | FastAPI | >=0.100 (0.162 installed) |
@@ -16,7 +16,7 @@
 | Data store | In-memory Python lists / React state | — |
 | Hosting | Vercel (frontend) | — |
 
-No router, state library, CSS framework, HTTP client, or database is used.
+No router library, state library, CSS framework, HTTP client, or database is used. Routing is a small hand-written hash router in `App.tsx`.
 
 ## Current system (as built)
 
@@ -25,8 +25,8 @@ flowchart LR
     subgraph Browser["Browser — frontend/ (React SPA)"]
         App["App.tsx<br/>global state + tab switch"]
         Mock["data/mockData.ts<br/>seed data"]
-        Views["views/*<br/>8 screens"]
-        Comp["components/<br/>HeaderStrip, Navbar,<br/>chat/MessageThread"]
+        Views["views/*<br/>11 screens"]
+        Comp["components/<br/>HeaderStrip, Navbar, Icon,<br/>FloatingOfficialChat, chat/MessageThread"]
         I18n["locales/translations.ts"]
         Mock --> App
         App --> Comp
@@ -73,9 +73,10 @@ flowchart LR
 | `lang` | `'en' \| 'hi'` | `'en'` | every component |
 | `fontScale` | number | `1.0` | HeaderStrip → `--font-scale` on `<html>` |
 | `highContrast` | boolean | `false` | HeaderStrip → `data-high-contrast` on `<html>` |
-| `activeRole` | `'complainant' \| 'official'` | `'complainant'` | HeaderStrip (via `handleSwitchRole`), LoginView, Navbar (which tabs show) |
-| `activeTab` | `ActiveTab` | `'dashboard'` | Navbar, all views (navigation) |
-| `currentUser` | profile or `null` | Aarav Sharma | HeaderStrip, set by LoginView; gives `officialName` for inbox messages |
+| `activeRole` | `'complainant' \| 'official'` | `'complainant'` | HeaderStrip role pill, `handleLoginSuccess`, Navbar (which badges show) |
+| `activeTab` | `ActiveTab` | from `location.hash`, else `'home'` | Navbar, all views (navigation); kept in sync with the URL hash |
+| `isFloatingChatOpen` | boolean | `false` | Navbar *Officer Chat*, dashboard/tracker chat buttons, footer → `FloatingOfficialChat` |
+| `currentUser` | profile or `null` | Aarav Sharma | HeaderStrip; set by `CitizenLoginView` / `AdminLoginView` via `handleLoginSuccess`; gives `officialName` for inbox messages |
 | `institutions` | `Institution[]` | `mockInstitutions` | LandingPage, FileComplaintView |
 | `complaints` | `Complaint[]` | `initialComplaints` | Dashboard, Track, Inbox, Navbar badge |
 | `selectedComplaintId` | `string \| null` | first complaint's id | Track, Chat, Inbox (shared selection); `selectedComplaint` is derived from it |
@@ -88,20 +89,24 @@ Storing the selection as an id (not an object copy) means every view reads the l
 
 ### Routing
 
-There is no URL routing. `activeTab` selects which view renders inside `<main>`:
+Hash-based: `activeTab` is read from `location.hash` on load (must be in `VALID_TABS`, else `#home`), `handleTabChange(tab)` writes the hash and scrolls to the top, and a `hashchange` listener keeps them in sync, so deep links and back/forward work. `activeTab` selects which view renders inside `<main>`:
 
-| `activeTab` | View |
+| `#hash` / `activeTab` | View |
 |---|---|
-| `home` | `LandingPage` |
-| `dashboard` (default) | `ComplainantDashboard` |
+| `home` (default) | `LandingPage` |
+| `citizen-login`, `login` | `CitizenLoginView` |
+| `admin-login` | `AdminLoginView` |
+| `dashboard`, `citizen` | `ComplainantDashboard` |
 | `file-complaint` | `FileComplaintView` |
 | `track` | `TrackComplaintView` |
-| `chat` | `UserAdminChatView` (only if `selectedComplaint` is set) |
+| `admin` | `AdministrationView` (Ledger sub-tab) |
+| `admin-inbox` | `AdministrationView` opened on the **Support Inbox** sub-tab (`AdminInboxView`, embedded) |
+| `chat` | `UserAdminChatView` (full-page fallback; only if `selectedComplaint` is set) |
 | `discord` | `DiscordReplicaView` |
-| `login` | `LoginView` |
-| `admin-inbox` | `AdminInboxView` (Support Inbox) |
 
-The navbar is role-aware: in **official** mode it shows *Support Inbox* (with an unread badge) instead of *File a Complaint* and *Official Chatbox*; in **complainant** mode the Chatbox tab shows the complainant's unread count. Switching to official opens the inbox; switching back from the inbox opens the dashboard.
+`FloatingOfficialChat` is rendered on every page (outside `<main>`) and opens over the content. The footer is hidden on `#discord`.
+
+Navbar: logo/Home, **Citizen Portal** (→ dashboard if signed in, else citizen login; shows the OTP count; reveals a citizen sub-nav: My Grievances / File a Complaint / Track & OTP Closure), Discord, **Officer Chat** (opens the floating chat; shows the complainant's unread count in complainant mode) and **Administration** (→ admin login, or straight to `#admin` / `#admin-inbox` for a signed-in official; shows the officer unread count in official mode). The header role pill sends officials to `#admin` (or `#admin-login` if not signed in) and complainants to `#home`.
 
 Because each view unmounts when the tab changes, its local state (wizard step, typed text) resets.
 
@@ -143,7 +148,7 @@ See [06-api-reference.md](06-api-reference.md).
 | Decision | Reason | Trade-off |
 |---|---|---|
 | Frontend runs on mock data | A reliable demo with no server dependency | Not integrated; data duplicated with backend |
-| Tab state instead of a router | Fewer dependencies, fast to build | No deep links, back button does nothing |
+| Hand-written hash router instead of a library | No dependency; deep links and back button work | Every new tab must be added to both `ActiveTab` and `VALID_TABS` |
 | Inline per-component CSS | Each screen is self-contained | Large files, no CSS reuse between views |
 | Permanent ID as the institution key | Matches AICTE's real identifier | Real data access requires AICTE authorisation |
 | OTP closure owned by the complainant | Prevents unilateral closure by institutions | Needs a real SMS gateway in production |

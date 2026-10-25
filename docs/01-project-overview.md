@@ -45,7 +45,10 @@ Be precise about this in presentations; judges will probe it.
 | Complainant dashboard with filters | **Working** (frontend) | All / Action required / Active / Resolved |
 | 6-stage tracker + timeline + evidence list | **Working** (frontend) | |
 | OTP-based closure and Ombudsman escalation | **Working** (frontend logic), demo OTP `849210` | No real SMS |
-| Admin Support Inbox (official side): conversation list, filters, reply / request documents / clarification, case summary panel | **Working** (frontend) | Opened via the "AICTE Official" role or officer login |
+| Administration portal: grievance ledger with filters and action desk, institutional compliance, 72h SLA radar | **Working** (frontend) | Added on main. Its quick "Confirm Resolved" button bypasses the citizen OTP — see B14 in [11](11-known-gaps-and-roadmap.md) |
+| Admin "Intelligent Case Linker" clusters | **Simulated** | Hard-coded clusters, including a case ID (`…84931`) that isn't in the data |
+| Admin Support Inbox (official side): conversation list, filters, reply / request documents / clarification, case summary panel | **Working** (frontend) | Support Inbox sub-tab of the Administration portal (`#admin-inbox`) |
+| URL routing (hash-based deep links, back button) | **Working** | `#home`, `#admin`, `#track`, … |
 | Case conversations linked to complaints (complainant ↔ officer) | **Working** (frontend, in memory) | Per-complaint threads, unread counts, read receipts; requests, uploads and clarifications are added to the case timeline and evidence |
 | Bilingual EN/HI, font scale, high contrast | **Working**, partial coverage | Header, nav, landing and the inbox/chat additions are translated; many older view strings are English-only |
 | Backend REST API (auth, grievances, closure, escalation, institutions, inbox, messages, document requests) | **Working** (backend) | In-memory data, verified with curl |

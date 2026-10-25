@@ -43,7 +43,7 @@ Ordered by value for the evaluation and by dependency. Each step lists the files
 - [ ] **3.2 Officer actions:** allot, serve notice, transfer between bureaus, add remark — each appends a timeline event and moves the stage (new endpoints `POST /api/grievances/{id}/actions`).
 - [ ] **3.3 Nodal officer ATR submission** → stage `RESOLUTION_PROPOSED` → system issues OTP → `PENDING_OTP`.
 - [ ] **3.4 Related-case review:** official confirms or rejects suggested links (`case_links.status`).
-- [ ] **3.5 Make the role switch real:** show official views when `activeRole === 'official'`; hide complainant-only actions. *Started:* the navbar now switches tabs by role (Support Inbox vs File a Complaint / Chatbox). Still needed: role-specific dashboard and real access control (Phase 4).
+- [ ] **3.5 Make the role switch real:** show official views when `activeRole === 'official'`; hide complainant-only actions. *Partly done:* main split the UI into a Citizen Portal and an Administration portal with separate logins, and the role decides which unread badges show. Still needed: real access control (Phase 4) — anyone can open `#admin`.
 
 ### Phase 4 · Persistence and security
 
