@@ -163,6 +163,119 @@ mock_grievances: List[Dict[str, Any]] = [
             }
         ],
         "related_case_count": 3
+    },
+    {
+        "id": "AICTE-2026-GRV-79114",
+        "title": "Caution deposit deduction of ₹44,000 without explanation",
+        "category": "FEES_REFUND",
+        "category_label": "Fee Refund & Excess Charges",
+        "institution_name": "Delhi Technological University (DTU)",
+        "aicte_permanent_id": "1-10928341",
+        "city": "New Delhi",
+        "state": "Delhi",
+        "complainant_name": "Pooja Kulkarni",
+        "complainant_role": "Student",
+        "contact_mobile": "+91 98111 22334",
+        "contact_email": "pooja.k@example.com",
+        "is_anonymous": False,
+        "details": "DTU Finance Section deducted ₹44,000 from my caution money upon graduation alleging library damages without providing itemized receipt or proof.",
+        "current_stage": "INVESTIGATION",
+        "stage_number": 3,
+        "sla_hours_remaining": 36,
+        "assigned_officer": {
+            "name": "Dr. Ramesh Chandra Verma",
+            "designation": "Director, Public Grievance Redressal Cell (PGRC)",
+            "bureau": "AICTE Head Office, New Delhi",
+            "badge_verified": True
+        },
+        "evidence_list": [
+            {
+                "id": "ev-p1",
+                "name": "Fee_Challan_Deduction_Slip.pdf",
+                "size": 420000,
+                "type": "application/pdf",
+                "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "upload_date": "20 Oct 2026"
+            }
+        ],
+        "timeline": [
+            {
+                "id": "tp-1",
+                "title": "Grievance Formally Registered",
+                "description": "Case registered regarding caution fee deduction. Assigned to PGRC.",
+                "actor": "System Gateway",
+                "role": "Central Dispatch",
+                "timestamp": "20 Oct 2026, 09:15 AM",
+                "stage": "REGISTERED"
+            }
+        ],
+        "related_case_ids": []
+    },
+    {
+        "id": "AICTE-2026-GRV-84931",
+        "title": "Non-Refund of Security Deposit Post Seat Cancellation",
+        "category": "FEES_REFUND",
+        "category_label": "Fee Refund & Excess Charges",
+        "institution_name": "DTU Delhi",
+        "aicte_permanent_id": "1-10928341",
+        "city": "New Delhi",
+        "state": "Delhi",
+        "complainant_name": "Rohan Gupta",
+        "complainant_role": "Student",
+        "contact_mobile": "+91 99222 33445",
+        "contact_email": "rohan.g@example.com",
+        "is_anonymous": False,
+        "details": "I withdrew from Computer Engineering seat before deadline but DTU accounts section refused to refund caution deposit of ₹44,000.",
+        "current_stage": "REGISTERED",
+        "stage_number": 1,
+        "sla_hours_remaining": 64,
+        "assigned_officer": {
+            "name": "Dr. Ramesh Chandra Verma",
+            "designation": "Director, PGRC",
+            "bureau": "AICTE Central HQ",
+            "badge_verified": True
+        },
+        "evidence_list": [],
+        "timeline": [
+            {
+                "id": "tr-1",
+                "title": "Grievance Registered",
+                "description": "Student filed grievance regarding ₹44,000 caution deposit retention.",
+                "actor": "System Gateway",
+                "role": "Gateway",
+                "timestamp": "22 Oct 2026",
+                "stage": "REGISTERED"
+            }
+        ],
+        "related_case_ids": []
+    },
+    {
+        "id": "AICTE-2026-GRV-65021",
+        "title": "Hostel Fee Overcharge and Caution Deposit Delay",
+        "category": "FEES_REFUND",
+        "category_label": "Fee Refund & Excess Charges",
+        "institution_name": "College of Engineering Pune (COEP)",
+        "aicte_permanent_id": "1-332918231",
+        "city": "Pune",
+        "state": "Maharashtra",
+        "complainant_name": "Sneha Patil",
+        "complainant_role": "Student",
+        "contact_mobile": "+91 98333 44556",
+        "contact_email": "sneha.p@example.com",
+        "is_anonymous": False,
+        "details": "COEP hostel administration delaying caution money return.",
+        "current_stage": "RESOLVED",
+        "stage_number": 6,
+        "sla_hours_remaining": 0,
+        "assigned_officer": {
+            "name": "Dr. Ramesh Chandra Verma",
+            "designation": "Director, PGRC",
+            "bureau": "AICTE Central HQ",
+            "badge_verified": True
+        },
+        "evidence_list": [],
+        "timeline": [],
+        "related_case_ids": []
     }
 ]
 

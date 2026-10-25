@@ -31,6 +31,7 @@ import {
   Unlink2,
   Sparkles,
   ExternalLink,
+  AlertTriangle,
 } from 'lucide-react';
 
 export const CaseDetail: React.FC = () => {
@@ -41,6 +42,7 @@ export const CaseDetail: React.FC = () => {
   const [complaint, setComplaint] = useState<Complaint | null>(null);
   const [relatedComplaints, setRelatedComplaints] = useState<Complaint[]>([]);
   const [unlinkedCounterpart, setUnlinkedCounterpart] = useState<Complaint | null>(null);
+  const [liveMatches, setLiveMatches] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'overview' | 'evidence' | 'history' | 'related' | 'notes'>('overview');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -123,6 +125,14 @@ export const CaseDetail: React.FC = () => {
           setUnlinkedCounterpart(candidate || null);
         } else {
           setUnlinkedCounterpart(null);
+        }
+
+        // Check live matcher for high-confidence unlinked candidates
+        try {
+          const m = await apiService.getCaseAnalysis(id);
+          setLiveMatches(m.filter((item: any) => !item.is_linked && item.confidence_score >= 80));
+        } catch {
+          setLiveMatches([]);
         }
       }
     } catch (err) {
@@ -267,6 +277,54 @@ export const CaseDetail: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Potential Overlapping Cases – Coordination Required Banner */}
+      {liveMatches.length > 0 && complaint && (
+        <div className="bg-amber-50 border-2 border-amber-400 rounded-[8px] p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="p-1 bg-amber-200 text-amber-900 rounded font-bold text-xs flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4 text-amber-700" />
+                Potential Overlapping Cases – Coordination Required
+              </span>
+              <span className="text-xs font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
+                {liveMatches[0].confidence_score}% Match Confidence
+              </span>
+            </div>
+            <p className="text-xs text-amber-900 leading-relaxed">
+              AICTE NIVARAN detected an unlinked grievance (<strong>{liveMatches[0].candidate_case_id}</strong>) against <strong>{liveMatches[0].candidate_institution_name}</strong> reporting related issues ({liveMatches[0].candidate_category}).
+              {liveMatches[0].breakdown?.extracted_amount_str && ` Both cases involve disputed amount: ${liveMatches[0].breakdown.extracted_amount_str}.`}
+            </p>
+            <div className="flex items-center gap-2 text-[11px] text-amber-800 font-medium">
+              <span>Matching Factors: {liveMatches[0].match_reasons?.join(' · ')}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Link
+              to="/coordination"
+              className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded text-xs font-bold transition-colors shadow-xs"
+            >
+              Open Coordination Desk
+            </Link>
+            <Button
+              size="sm"
+              variant="secondary"
+              leftIcon={<Link2 className="w-3.5 h-3.5" />}
+              onClick={async () => {
+                await apiService.linkCases(complaint.id, liveMatches[0].candidate_case_id);
+                addToast({
+                  type: 'success',
+                  title: 'Docket Linked for Joint Inquiry',
+                  message: `Linked ${complaint.id} with ${liveMatches[0].candidate_case_id}.`,
+                });
+                loadCase();
+              }}
+            >
+              Confirm Link
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Official Case Header */}
       <div className="bg-white border border-[#CBD2DC] rounded-[8px] p-5 shadow-sm">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-[#CBD2DC]">

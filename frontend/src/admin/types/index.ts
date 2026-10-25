@@ -120,6 +120,18 @@ export interface OverlapCandidate {
   matchReasons: string[];
   confidenceScore: number;
   isLinked: boolean;
+  tier?: 'PRIORITIZED' | 'MANUAL_REVIEW' | 'NO_MATCH';
+  breakdown?: {
+    permanent_id_match: boolean;
+    institution_score: number;
+    category_match: boolean;
+    category_score: number;
+    extracted_amount_match?: boolean | null;
+    extracted_amount_str?: string | null;
+    temporal_proximity_days: number;
+    semantic_similarity_score: number;
+    shared_keyphrases: string[];
+  };
 }
 
 export interface Institution {

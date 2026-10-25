@@ -18,8 +18,11 @@ from app.schemas import (
     EscalateRequest,
     ChatMessageRequest,
     MarkReadRequest,
-    FulfillDocumentRequest
+    FulfillDocumentRequest,
+    OverlapRecommendation,
+    LinkActionRequest
 )
+from app.matcher import analyze_grievance_overlap, find_all_overlap_candidates
 
 app = FastAPI(
     title="AICTE NIVARAN API",
@@ -485,3 +488,92 @@ def fulfill_document_request(case_id: str, request_id: str, req: FulfillDocument
                         f"{len(files)} file(s) uploaded with SHA-256 digests in response to the request for: {', '.join(doc_request['items'])}.",
                         req.sender_name, "Complainant")
     return {"success": True, "message": submission, "document_request": doc_request}
+
+# ==========================================================================
+# Similar Grievance Detection & Case Linker Endpoints
+# ==========================================================================
+
+@app.get("/api/matcher/coordination-queue")
+def get_coordination_queue():
+    """Returns candidate overlap pairs for all active grievances."""
+    candidates = find_all_overlap_candidates(mock_grievances)
+    return {
+        "success": True,
+        "count": len(candidates),
+        "candidates": candidates
+    }
+
+@app.get("/api/matcher/analyze-case/{case_id}")
+def analyze_case_overlap(case_id: str):
+    """Analyzes a specific grievance against all other grievances."""
+    target = _find_grievance(case_id)
+    matches = []
+    for g in mock_grievances:
+        if g["id"] == target["id"]:
+            continue
+        res = analyze_grievance_overlap(target, g)
+        if res:
+            matches.append(res)
+    matches.sort(key=lambda m: m["confidence_score"], reverse=True)
+    return {
+        "success": True,
+        "target_case_id": target["id"],
+        "matches_count": len(matches),
+        "matches": matches
+    }
+
+@app.post("/api/matcher/link-action")
+def perform_link_action(req: LinkActionRequest):
+    """Confirm or reject linking between two overlapping cases."""
+    src = _find_grievance(req.source_case_id)
+    tgt = _find_grievance(req.target_case_id)
+
+    if req.action == "CONFIRM":
+        # Add bidirectional links
+        src_links = src.setdefault("related_case_ids", [])
+        tgt_links = tgt.setdefault("related_case_ids", [])
+
+        if tgt["id"] not in src_links:
+            src_links.append(tgt["id"])
+            src["related_case_count"] = len(src_links)
+            _add_timeline_event(
+                src,
+                "Case Linked for Joint Coordination Inquiry",
+                f"Statutory linkage confirmed with case {tgt['id']} ({tgt.get('institution_name')}). Bundled for joint institutional hearing.",
+                req.officer_name,
+                "AICTE Officer"
+            )
+
+        if src["id"] not in tgt_links:
+            tgt_links.append(src["id"])
+            tgt["related_case_count"] = len(tgt_links)
+            _add_timeline_event(
+                tgt,
+                "Case Linked for Joint Coordination Inquiry",
+                f"Statutory linkage confirmed with case {src['id']} ({src.get('institution_name')}). Bundled for joint institutional hearing.",
+                req.officer_name,
+                "AICTE Officer"
+            )
+
+        return {
+            "success": True,
+            "action": "CONFIRMED",
+            "message": f"Successfully linked {src['id']} and {tgt['id']} into joint inquiry cluster."
+        }
+
+    else:
+        # Rejection
+        reason = req.rejection_reason or "Cases reviewed and determined to be separate individual disputes."
+        _add_timeline_event(
+            src,
+            "Overlap Link Dismissed",
+            f"Suggested link with {tgt['id']} dismissed: {reason}",
+            req.officer_name,
+            "AICTE Officer"
+        )
+        return {
+            "success": True,
+            "action": "REJECTED",
+            "message": f"Overlap recommendation dismissed between {src['id']} and {tgt['id']}."
+        }
+

@@ -504,6 +504,21 @@ export const apiService = {
 
   // Related Cases
   async linkCases(primaryId: string, relatedId: string) {
+    try {
+      await fetch('http://localhost:8000/api/matcher/link-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source_case_id: primaryId,
+          target_case_id: relatedId,
+          action: 'CONFIRM',
+          officer_name: 'Dr. Ramesh Chandra Verma',
+        }),
+      });
+    } catch {
+      // fallback to local cache
+    }
+
     const c1 = complaintsCache.find((c) => c.id === primaryId);
     const c2 = complaintsCache.find((c) => c.id === relatedId);
     if (c1 && !c1.relatedCaseIds.includes(relatedId)) {
@@ -517,6 +532,21 @@ export const apiService = {
   },
 
   async unlinkCases(primaryId: string, targetId: string) {
+    try {
+      await fetch('http://localhost:8000/api/matcher/link-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source_case_id: primaryId,
+          target_case_id: targetId,
+          action: 'REJECT',
+          officer_name: 'Dr. Ramesh Chandra Verma',
+        }),
+      });
+    } catch {
+      // fallback to local cache
+    }
+
     const c1 = complaintsCache.find((c) => c.id === primaryId);
     const c2 = complaintsCache.find((c) => c.id === targetId);
     if (c1) {
@@ -530,11 +560,69 @@ export const apiService = {
   },
 
   async getOverlapCandidates(): Promise<OverlapCandidate[]> {
+    // 1. Attempt live query to FastAPI Hybrid Grievance Matcher
+    try {
+      const resp = await fetch('http://localhost:8000/api/matcher/coordination-queue');
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.candidates && data.candidates.length > 0) {
+          return data.candidates.map((c: any) => {
+            const prim = complaintsCache.find((x) => x.id === c.target_case_id) || complaintsCache[0];
+            const rel = complaintsCache.find((x) => x.id === c.candidate_case_id) || {
+              id: c.candidate_case_id,
+              complaintNumber: c.candidate_case_id,
+              title: c.candidate_title,
+              category: 'FEES_REFUND' as any,
+              status: 'UNDER_REVIEW' as any,
+              priority: 'HIGH' as any,
+              institutionId: 'inst-1',
+              institutionName: c.candidate_institution_name,
+              institutionPermanentId: c.candidate_permanent_id,
+              city: 'New Delhi',
+              state: 'Delhi',
+              assignedBureau: 'Central Grievance Redressal Cell (PGRC)' as any,
+              complainantName: c.candidate_complainant_masked,
+              complainantRole: 'STUDENT' as any,
+              complainantContact: 'Protected',
+              complainantEmail: 'protected@gov.in',
+              isAnonymous: false,
+              details: c.candidate_title,
+              evidenceCount: 1,
+              evidence: [],
+              timeline: [],
+              notes: [],
+              relatedCaseIds: [],
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              slaDeadline: new Date().toISOString(),
+              daysRemaining: 3,
+              isOverdue: false,
+            };
+
+            return {
+              pairId: c.pair_id,
+              problemId: `prob-${c.candidate_permanent_id}`,
+              problemTitle: c.candidate_title,
+              primaryCase: prim,
+              relatedCase: rel,
+              matchReasons: c.match_reasons,
+              confidenceScore: c.confidence_score,
+              isLinked: c.is_linked,
+              tier: c.recommendation_tier,
+              breakdown: c.breakdown,
+            };
+          });
+        }
+      }
+    } catch {
+      // Offline fallback: continue to local cache
+    }
+
     const items = [...complaintsCache];
     const pairs: OverlapCandidate[] = [];
     const seenPairs = new Set<string>();
 
-    // 1. Group by problemId where two cases represent the same problem from different POVs
+    // 2. Group by problemId where two cases represent the same problem from different POVs
     const problemMap = new Map<string, Complaint[]>();
     for (const c of items) {
       if (c.problemId) {
@@ -616,6 +704,19 @@ export const apiService = {
     // Sort by confidenceScore descending
     pairs.sort((a, b) => b.confidenceScore - a.confidenceScore);
     return pairs;
+  },
+
+  async getCaseAnalysis(caseId: string): Promise<any[]> {
+    try {
+      const resp = await fetch(`http://localhost:8000/api/matcher/analyze-case/${caseId}`);
+      if (resp.ok) {
+        const data = await resp.json();
+        return data.matches || [];
+      }
+    } catch {
+      // fallback
+    }
+    return [];
   },
 
   // Institutions

@@ -74,3 +74,43 @@ class MarkReadRequest(BaseModel):
 class FulfillDocumentRequest(BaseModel):
     sender_name: str
     attachments: List[EvidenceUploadItem]
+
+# ==========================================================================
+# Overlap Detection & Case Linker Schemas
+# ==========================================================================
+
+class MatchCriteriaBreakdown(BaseModel):
+    permanent_id_match: bool
+    institution_score: float
+    category_match: bool
+    category_score: float
+    extracted_amount_match: Optional[bool] = None
+    extracted_amount_str: Optional[str] = None
+    temporal_proximity_days: int
+    semantic_similarity_score: float
+    shared_keyphrases: List[str] = []
+
+class OverlapRecommendation(BaseModel):
+    pair_id: str
+    target_case_id: str
+    candidate_case_id: str
+    candidate_title: str
+    candidate_category: str
+    candidate_institution_name: str
+    candidate_permanent_id: str
+    candidate_complainant_masked: str
+    candidate_date: str
+    confidence_score: int
+    recommendation_tier: Literal["PRIORITIZED", "MANUAL_REVIEW", "NO_MATCH"]
+    match_reasons: List[str]
+    breakdown: MatchCriteriaBreakdown
+    is_linked: bool = False
+    is_dismissed: bool = False
+
+class LinkActionRequest(BaseModel):
+    source_case_id: str
+    target_case_id: str
+    action: Literal["CONFIRM", "REJECT"]
+    officer_name: str
+    rejection_reason: Optional[str] = None
+
