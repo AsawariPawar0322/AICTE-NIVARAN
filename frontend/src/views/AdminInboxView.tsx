@@ -41,6 +41,8 @@ interface AdminInboxViewProps {
   ) => void;
   onAddClarification: (complaintId: string, officerName: string, text: string) => void;
   onMarkThreadRead: (complaintId: string, reader: ConversationReader) => void;
+  // Rendered inside another page's container (Administration portal)
+  embedded?: boolean;
 }
 
 type InboxFilter = 'ALL' | 'UNREAD' | 'AWAITING' | 'DOCS_PENDING';
@@ -98,7 +100,8 @@ export const AdminInboxView: React.FC<AdminInboxViewProps> = ({
   onSendMessage,
   onRequestDocuments,
   onAddClarification,
-  onMarkThreadRead
+  onMarkThreadRead,
+  embedded = false
 }) => {
   const t = translations[lang];
   const [filter, setFilter] = useState<InboxFilter>('ALL');
@@ -226,8 +229,8 @@ export const AdminInboxView: React.FC<AdminInboxViewProps> = ({
   ];
 
   return (
-    <div className="inbox-page-container" id="main-content">
-      <div className="container">
+    <div className={`inbox-page-container ${embedded ? 'is-embedded' : ''}`} id={embedded ? undefined : 'main-content'}>
+      <div className={embedded ? undefined : 'container'}>
         <div className="inbox-page-head flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="inbox-head-icon"><Inbox size={22} /></div>
@@ -578,6 +581,9 @@ export const AdminInboxView: React.FC<AdminInboxViewProps> = ({
       <style>{`
         .inbox-page-container {
           padding: 28px 0 64px 0;
+        }
+        .inbox-page-container.is-embedded {
+          padding: 8px 0 0 0;
         }
         .inbox-page-container .flex-wrap {
           flex-wrap: wrap;

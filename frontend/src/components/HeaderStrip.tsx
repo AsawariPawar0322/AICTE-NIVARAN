@@ -1,6 +1,6 @@
 import React from 'react';
 import { translations, Language } from '../locales/translations';
-import { PhoneCall, ShieldAlert, Eye, Volume2, CheckCircle2, Lock, User } from 'lucide-react';
+import { Icon } from './Icon';
 
 interface HeaderStripProps {
   lang: Language;
@@ -14,6 +14,7 @@ interface HeaderStripProps {
   currentUser: { name: string; role: string; institution?: string } | null;
   onOpenLogin: () => void;
   onLogout: () => void;
+  onNavigateHome?: () => void;
 }
 
 export const HeaderStrip: React.FC<HeaderStripProps> = ({
@@ -27,7 +28,8 @@ export const HeaderStrip: React.FC<HeaderStripProps> = ({
   setActiveRole,
   currentUser,
   onOpenLogin,
-  onLogout
+  onLogout,
+  onNavigateHome
 }) => {
   const t = translations[lang];
 
@@ -39,7 +41,6 @@ export const HeaderStrip: React.FC<HeaderStripProps> = ({
       <div className="gov-top-bar">
         <div className="container flex items-center justify-between">
           <div className="gov-emblem-cluster flex items-center gap-2">
-            {/* Ashoka Pillar / Emblem representation */}
             <div className="national-emblem" aria-hidden="true">
               🏛️
             </div>
@@ -57,7 +58,7 @@ export const HeaderStrip: React.FC<HeaderStripProps> = ({
               title="Screen Reader & Voice Accessibility"
               onClick={() => alert('Screen Reader compatibility enabled (WCAG 2.1 AA / GIGW 3.0 compliant)')}
             >
-              <Volume2 size={14} />
+              <Icon e="🔊" size={14} />
               <span className="hide-on-mobile">{t.screenReader}</span>
             </button>
 
@@ -68,7 +69,7 @@ export const HeaderStrip: React.FC<HeaderStripProps> = ({
               onClick={() => setHighContrast(!highContrast)}
               title="Toggle High Contrast Mode"
             >
-              <Eye size={14} />
+              <Icon e="👁️" size={14} />
               <span>{highContrast ? 'Normal' : 'Contrast'}</span>
             </button>
 
@@ -125,7 +126,12 @@ export const HeaderStrip: React.FC<HeaderStripProps> = ({
       {/* Main AICTE Branding Strip with Role Switch */}
       <div className="aicte-branding-strip">
         <div className="container flex items-center justify-between branding-inner">
-          <div className="brand-lockup flex items-center gap-3">
+          <div 
+            className="brand-lockup flex items-center gap-3"
+            onClick={onNavigateHome}
+            style={{ cursor: 'pointer' }}
+            title="Return to AICTE NIVARAN Home / Landing Page"
+          >
             <div className="aicte-logo-box">
               <img 
                 src="/aicte-nivaran-logo.png" 
@@ -157,7 +163,7 @@ export const HeaderStrip: React.FC<HeaderStripProps> = ({
                   className={`role-tab ${activeRole === 'complainant' ? 'active-role' : ''}`}
                   onClick={() => setActiveRole('complainant')}
                 >
-                  <CheckCircle2 size={16} />
+                  <Icon e="✅" size={16} />
                   <span>{lang === 'hi' ? 'शिकायतकर्ता' : 'Complainant'}</span>
                 </button>
                 <button
@@ -196,7 +202,7 @@ export const HeaderStrip: React.FC<HeaderStripProps> = ({
                   className="btn btn-outline btn-sm btn-header-login flex items-center gap-1"
                   onClick={onOpenLogin}
                 >
-                  <Lock size={13} />
+                  <Icon e="🔐" size={13} />
                   <span>Sign In</span>
                 </button>
               )}
@@ -209,20 +215,20 @@ export const HeaderStrip: React.FC<HeaderStripProps> = ({
       <div className="urgent-helplines-strip">
         <div className="container flex items-center justify-between flex-wrap gap-2">
           <div className="helpline-lead flex items-center gap-1">
-            <ShieldAlert size={16} className="text-danger" />
+            <Icon e="⚠️" size={16} />
             <strong className="helpline-title">{t.emergencyHelplines}:</strong>
           </div>
           <div className="helpline-badges flex items-center gap-3 flex-wrap">
             <a href="tel:18001805522" className="helpline-chip chip-ragging">
-              <PhoneCall size={13} />
+              <Icon e="📞" size={13} />
               <span>{t.antiRaggingHelpline} (Toll-Free 24x7)</span>
             </a>
             <a href="tel:1091" className="helpline-chip chip-women">
-              <PhoneCall size={13} />
+              <Icon e="📞" size={13} />
               <span>{t.womenHelpline}</span>
             </a>
             <a href="tel:1930" className="helpline-chip chip-cyber">
-              <PhoneCall size={13} />
+              <Icon e="📞" size={13} />
               <span>{t.cyberHelpline}</span>
             </a>
           </div>
