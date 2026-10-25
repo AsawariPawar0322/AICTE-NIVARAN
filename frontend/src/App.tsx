@@ -13,6 +13,7 @@ import { AdministrationView } from './views/AdministrationView';
 import { DiscordReplicaView } from './views/DiscordReplicaView';
 import { AdminInboxView } from './views/AdminInboxView';
 import { FloatingOfficialChat } from './components/FloatingOfficialChat';
+import { AdminPortal } from './admin/App';
 import {
   mockInstitutions,
   initialComplaints,
@@ -318,46 +319,52 @@ export function App() {
       ? currentUser.name
       : null;
 
+  const isAdminView = activeTab === 'admin' || activeTab === 'admin-inbox';
+
   return (
     <div className="app-root">
-      {/* 1. Government Header Strip */}
-      <HeaderStrip
-        lang={lang}
-        setLang={setLang}
-        fontScale={fontScale}
-        setFontScale={setFontScale}
-        highContrast={highContrast}
-        setHighContrast={setHighContrast}
-        activeRole={activeRole}
-        setActiveRole={(newRole) => {
-          setActiveRole(newRole);
-          // Signed-in officials go straight to the portal instead of the login screen
-          if (newRole === 'official') handleTabChange(officialName ? 'admin' : 'admin-login');
-          else handleTabChange('home');
-        }}
-        currentUser={currentUser}
-        onOpenLogin={() => handleTabChange('citizen-login')}
-        onNavigateHome={() => handleTabChange('home')}
-        onLogout={() => {
-          setCurrentUser(null);
-          setActiveRole('complainant');
-          handleTabChange('home');
-        }}
-      />
+      {/* 1. Government Header Strip (Citizen Side) */}
+      {!isAdminView && (
+        <HeaderStrip
+          lang={lang}
+          setLang={setLang}
+          fontScale={fontScale}
+          setFontScale={setFontScale}
+          highContrast={highContrast}
+          setHighContrast={setHighContrast}
+          activeRole={activeRole}
+          setActiveRole={(newRole) => {
+            setActiveRole(newRole);
+            // Signed-in officials go straight to the portal instead of the login screen
+            if (newRole === 'official') handleTabChange(officialName ? 'admin' : 'admin-login');
+            else handleTabChange('home');
+          }}
+          currentUser={currentUser}
+          onOpenLogin={() => handleTabChange('citizen-login')}
+          onNavigateHome={() => handleTabChange('home')}
+          onLogout={() => {
+            setCurrentUser(null);
+            setActiveRole('complainant');
+            handleTabChange('home');
+          }}
+        />
+      )}
 
-      {/* 2. Navigation */}
-      <Navbar
-        lang={lang}
-        activeTab={activeTab}
-        setActiveTab={handleTabChange}
-        pendingOtpCount={pendingOtpCount}
-        onOpenFloatingChat={() => setIsFloatingChatOpen(true)}
-        isLoggedIn={isLoggedIn}
-        activeRole={activeRole}
-        isOfficialSignedIn={officialName !== null}
-        officerUnreadCount={officerUnreadCount}
-        complainantUnreadCount={complainantUnreadCount}
-      />
+      {/* 2. Navigation (Citizen Side) */}
+      {!isAdminView && (
+        <Navbar
+          lang={lang}
+          activeTab={activeTab}
+          setActiveTab={handleTabChange}
+          pendingOtpCount={pendingOtpCount}
+          onOpenFloatingChat={() => setIsFloatingChatOpen(true)}
+          isLoggedIn={isLoggedIn}
+          activeRole={activeRole}
+          isOfficialSignedIn={officialName !== null}
+          officerUnreadCount={officerUnreadCount}
+          complainantUnreadCount={complainantUnreadCount}
+        />
+      )}
 
       {/* 3. Main content */}
       <main id="main-content">
@@ -448,38 +455,15 @@ export function App() {
           />
         )}
 
-        {/* Administration (#admin-inbox opens it on the Messages sub-tab) */}
+        {/* Enterprise Administration Portal (15 modules) */}
         {(activeTab === 'admin' || activeTab === 'admin-inbox') && (
-          <AdministrationView
-            key={activeTab}
-            lang={lang}
-            setActiveTab={handleTabChange}
-            complaints={complaints}
-            institutions={institutions}
-            onSelectComplaintForTracking={(complaint) => {
-              setSelectedComplaintId(complaint.id);
-              handleTabChange('track');
+          <AdminPortal
+            officerInfo={currentUser}
+            onExitAdmin={() => {
+              setActiveRole('complainant');
+              handleTabChange('home');
             }}
-            onOpenOfficialChat={(complaint) => setSelectedComplaintId(complaint.id)}
-            onUpdateComplaintStage={handleUpdateComplaintStage}
-            initialAdminTab={activeTab === 'admin-inbox' ? 'messages' : 'ledger'}
-            officerUnreadCount={officerUnreadCount}
-            messagesPanel={
-              <AdminInboxView
-                embedded
-                lang={lang}
-                complaints={complaints}
-                conversations={conversations}
-                selectedComplaintId={selectedComplaintId}
-                officialName={officialName}
-                onSelectComplaint={setSelectedComplaintId}
-                onOpenFullCase={handleOpenCaseFromInbox}
-                onSendMessage={handleSendMessage}
-                onRequestDocuments={handleRequestDocuments}
-                onAddClarification={handleAddClarification}
-                onMarkThreadRead={handleMarkThreadRead}
-              />
-            }
+            initialRoute={activeTab === 'admin-inbox' ? '/messages' : '/'}
           />
         )}
 
@@ -505,23 +489,25 @@ export function App() {
         )}
       </main>
 
-      {/* 4. Floating chat */}
-      <FloatingOfficialChat
-        lang={lang}
-        complaints={complaints}
-        selectedComplaint={selectedComplaint}
-        onSelectComplaint={(c) => setSelectedComplaintId(c.id)}
-        conversations={conversations}
-        unreadCount={complainantUnreadCount}
-        onSendMessage={handleSendMessage}
-        onFulfillDocumentRequest={handleFulfillDocumentRequest}
-        onMarkThreadRead={handleMarkThreadRead}
-        isOpen={isFloatingChatOpen}
-        setIsOpen={setIsFloatingChatOpen}
-      />
+      {/* 4. Floating chat (Citizen side only) */}
+      {!isAdminView && (
+        <FloatingOfficialChat
+          lang={lang}
+          complaints={complaints}
+          selectedComplaint={selectedComplaint}
+          onSelectComplaint={(c) => setSelectedComplaintId(c.id)}
+          conversations={conversations}
+          unreadCount={complainantUnreadCount}
+          onSendMessage={handleSendMessage}
+          onFulfillDocumentRequest={handleFulfillDocumentRequest}
+          onMarkThreadRead={handleMarkThreadRead}
+          isOpen={isFloatingChatOpen}
+          setIsOpen={setIsFloatingChatOpen}
+        />
+      )}
 
-      {/* 5. Footer */}
-      {activeTab !== 'discord' && (
+      {/* 5. Footer (Citizen side only) */}
+      {activeTab !== 'discord' && !isAdminView && (
         <footer className="gov-footer" role="contentinfo">
           <div className="container">
             <div className="footer-columns grid grid-cols-4 gap-6">

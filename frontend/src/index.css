@@ -1,4 +1,6 @@
 @import "./tokens.css";
+@tailwind components;
+@tailwind utilities;
 
 /* Global CSS Reset */
 *, *::before, *::after {
