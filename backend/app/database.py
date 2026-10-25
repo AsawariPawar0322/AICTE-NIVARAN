@@ -345,3 +345,91 @@ mock_messages: Dict[str, List[Dict[str, Any]]] = {
         }
     ]
 }
+
+# Resolution Proofs ledger with Closure-Quality Scrutiny metadata
+mock_resolution_proofs: List[Dict[str, Any]] = [
+    {
+        "id": "prf-84920",
+        "complaint_id": "AICTE-2026-GRV-84920",
+        "complaint_title": "Excessive Caution Money & Tuition Fee Non-Refund after AICTE Round 1 Seat Withdrawal",
+        "category": "FEES_REFUND",
+        "institution_name": "Delhi Technological University (DTU)",
+        "permanent_id": "1-10928341",
+        "submitted_at": "2026-10-25T11:30:00Z",
+        "submitted_by": "Prof. Alok Mathur (Nodal Officer, DTU)",
+        "proposed_resolution_summary": "Pursuant to AICTE Regulation Chapter 10, the College Finance Committee has cleared the full caution money refund of ₹44,000 to student bank account via NEFT on 22-Oct-2026. Bank Transaction Reference UTR: UTR-SBIN202609148201. Bank scroll and payment clearance slip attached.",
+        "proof_document_name": "NEFT_Refund_Scroll_DTU_84920.pdf",
+        "proof_sha256": "a94f52079cd89a3f324982187321a4f028491028349182394812948129481234",
+        "status": "ACCEPTED_FOR_OTP",
+        "reviewer_remarks": "Verified: Legitimate NEFT transaction with 12-digit UTR and valid institutional clearance memo. OTP sent to complainant.",
+        "reviewed_at": "2026-10-25T12:00:00Z",
+        "reviewed_by": "Dr. Sanjeev Khurana (PGRC)",
+        "complainant_dispute_filed": False,
+        "dispute_reason": None
+    },
+    {
+        "id": "prf-79114",
+        "complaint_id": "AICTE-2026-GRV-79114",
+        "complaint_title": "Caution deposit deduction of ₹44,000 without explanation",
+        "category": "FEES_REFUND",
+        "institution_name": "Delhi Technological University (DTU)",
+        "permanent_id": "1-10928341",
+        "submitted_at": "2026-10-25T14:15:00Z",
+        "submitted_by": "Accounts Clerk, DTU",
+        "proposed_resolution_summary": "The matter has been noted and forwarded to the concerned accounts section for necessary compliance. Suitable instructions have been issued to the concerned staff. Matter is closed from our end.",
+        "proof_document_name": "",
+        "proof_sha256": "N/A",
+        "status": "PENDING_REVIEW",
+        "reviewer_remarks": None,
+        "reviewed_at": None,
+        "reviewed_by": None,
+        "complainant_dispute_filed": False,
+        "dispute_reason": None
+    },
+    {
+        "id": "prf-84931",
+        "complaint_id": "AICTE-2026-GRV-84931",
+        "complaint_title": "Non-Refund of Security Deposit Post Seat Cancellation",
+        "category": "FEES_REFUND",
+        "institution_name": "DTU Delhi",
+        "permanent_id": "1-10928341",
+        "submitted_at": "2026-10-25T16:00:00Z",
+        "submitted_by": "Accounts Clerk, DTU",
+        "proposed_resolution_summary": "The matter has been noted and forwarded to the respective accounts department for necessary compliance. Action has been initiated, and matter is under process.",
+        "proof_document_name": "",
+        "proof_sha256": "N/A",
+        "status": "PENDING_REVIEW",
+        "reviewer_remarks": None,
+        "reviewed_at": None,
+        "reviewed_by": None,
+        "complainant_dispute_filed": False,
+        "dispute_reason": None
+    },
+    {
+        "id": "prf-65021",
+        "complaint_id": "AICTE-2026-GRV-65021",
+        "complaint_title": "Marksheet Withheld & Excessive Charges",
+        "category": "ADMISSIONS_EXAM",
+        "institution_name": "College of Engineering Pune (COEP Tech)",
+        "permanent_id": "1-332918231",
+        "submitted_at": "2026-10-25T17:30:00Z",
+        "submitted_by": "Exam Superintendent, COEP",
+        "proposed_resolution_summary": "The complainant is advised to contact the Affiliating University Examination Section directly as marksheet issuance does not pertain to this department. Grievance disposed.",
+        "proof_document_name": "",
+        "proof_sha256": "N/A",
+        "status": "PENDING_REVIEW",
+        "reviewer_remarks": None,
+        "reviewed_at": None,
+        "reviewed_by": None,
+        "complainant_dispute_filed": True,
+        "dispute_reason": "College passed responsibility to university without issuing the clearance certificate."
+    }
+]
+
+def get_past_atrs_for_institution(permanent_id: str) -> List[str]:
+    """Retrieve historical ATR summaries submitted by an institution to detect copy-paste replies."""
+    return [
+        p["proposed_resolution_summary"]
+        for p in mock_resolution_proofs
+        if p.get("permanent_id") == permanent_id and p.get("proposed_resolution_summary")
+    ]

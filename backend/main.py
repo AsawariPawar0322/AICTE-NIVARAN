@@ -8,7 +8,14 @@ from typing import Optional, List, Dict, Any, Literal
 import datetime
 import random
 
-from app.database import mock_institutions, mock_grievances, mock_otp_sessions, mock_messages
+from app.database import (
+    mock_institutions,
+    mock_grievances,
+    mock_otp_sessions,
+    mock_messages,
+    mock_resolution_proofs,
+    get_past_atrs_for_institution
+)
 from app.schemas import (
     SendOtpRequest,
     VerifyOtpRequest,
@@ -20,9 +27,13 @@ from app.schemas import (
     MarkReadRequest,
     FulfillDocumentRequest,
     OverlapRecommendation,
-    LinkActionRequest
+    LinkActionRequest,
+    AtrEvaluationRequest,
+    AtrQualityResult,
+    AtrScrutinyDecisionRequest
 )
 from app.matcher import analyze_grievance_overlap, find_all_overlap_candidates
+from app.atr_validator import evaluate_atr_quality
 
 app = FastAPI(
     title="AICTE NIVARAN API",
@@ -575,5 +586,163 @@ def perform_link_action(req: LinkActionRequest):
             "success": True,
             "action": "REJECTED",
             "message": f"Overlap recommendation dismissed between {src['id']} and {tgt['id']}."
+        }
+
+
+# ==========================================================================
+# FEATURE 2: CLOSURE-QUALITY VALIDATOR (ACTION TAKEN REPORT SCRUTINY)
+# ==========================================================================
+
+@app.get("/api/atr/scrutiny-queue")
+def get_atr_scrutiny_queue():
+    """
+    Evaluates all submitted Action Taken Reports (ATRs) against the 5-factor
+    quality validator (boilerplate, missing evidence, transfer runaround, duplicates).
+    """
+    evaluated_proofs = []
+    for proof in mock_resolution_proofs:
+        perm_id = proof.get("permanent_id", "")
+        past_atrs = get_past_atrs_for_institution(perm_id)
+        # Exclude current report text
+        past_filtered = [p for p in past_atrs if p.strip() != proof.get("proposed_resolution_summary", "").strip()]
+
+        quality = evaluate_atr_quality(
+            category=proof.get("category", ""),
+            atr_text=proof.get("proposed_resolution_summary", ""),
+            voucher_name=proof.get("proof_document_name"),
+            voucher_sha256=proof.get("proof_sha256"),
+            past_atrs_for_institution=past_filtered
+        )
+
+        item = {
+            "id": proof.get("id"),
+            "complaintId": proof.get("complaint_id"),
+            "complaintTitle": proof.get("complaint_title"),
+            "institutionName": proof.get("institution_name"),
+            "permanentId": proof.get("permanent_id"),
+            "submittedAt": proof.get("submitted_at"),
+            "submittedBy": proof.get("submitted_by"),
+            "proposedResolutionSummary": proof.get("proposed_resolution_summary"),
+            "proofDocumentName": proof.get("proof_document_name"),
+            "proofSha256": proof.get("proof_sha256"),
+            "status": proof.get("status"),
+            "reviewerRemarks": proof.get("reviewer_remarks"),
+            "reviewedAt": proof.get("reviewed_at"),
+            "reviewedBy": proof.get("reviewed_by"),
+            "complainantDisputeFiled": proof.get("complainant_dispute_filed", False),
+            "disputeReason": proof.get("dispute_reason"),
+            # Automated Quality Assessment
+            "qualityScore": quality["quality_score"],
+            "qualityVerdict": quality["verdict"],
+            "statusLabel": quality["status_label"],
+            "canDispatchOtp": quality["can_dispatch_otp"],
+            "extractedUtr": quality["extracted_utr"],
+            "riskFlags": quality["risk_flags"],
+            "scrutinyReasons": quality["reasons"],
+            "similarityToPastAtr": quality["similarity_to_past_atr"]
+        }
+        evaluated_proofs.append(item)
+
+    # Sort so suspicious/flagged closures surface first
+    evaluated_proofs.sort(key=lambda p: (p["qualityScore"], p["status"] == "PENDING_REVIEW"), reverse=False)
+
+    return {
+        "success": True,
+        "count": len(evaluated_proofs),
+        "proofs": evaluated_proofs
+    }
+
+
+@app.post("/api/atr/validate")
+def validate_single_atr(req: AtrEvaluationRequest):
+    """On-demand endpoint to test or validate an ATR before submission."""
+    past_atrs = get_past_atrs_for_institution(req.institution_id or "") if req.institution_id else []
+    quality = evaluate_atr_quality(
+        category=req.category,
+        atr_text=req.atr_text,
+        voucher_name=req.voucher_name,
+        voucher_sha256=req.voucher_sha256,
+        past_atrs_for_institution=past_atrs
+    )
+    return {
+        "success": True,
+        "complaint_id": req.complaint_id,
+        "assessment": quality
+    }
+
+
+@app.post("/api/atr/scrutiny-decision")
+def record_atr_scrutiny_decision(req: AtrScrutinyDecisionRequest):
+    """
+    Bureau Officer either approves substantiated proof (dispatching OTP)
+    or rejects evasive/fake closure (issuing a notice to the college).
+    """
+    target_proof = None
+    for p in mock_resolution_proofs:
+        if p["id"] == req.proof_id or p["complaint_id"] == req.complaint_id:
+            target_proof = p
+            break
+
+    if not target_proof:
+        raise HTTPException(status_code=404, detail="Resolution proof not found")
+
+    target_case = _find_grievance(req.complaint_id)
+
+    target_proof["reviewed_by"] = req.officer_name
+    target_proof["reviewed_at"] = datetime.datetime.now().isoformat()
+    target_proof["reviewer_remarks"] = req.remarks
+
+    if req.action == "APPROVE_AND_DISPATCH_OTP":
+        target_proof["status"] = "ACCEPTED_FOR_OTP"
+        target_case["current_stage"] = "PENDING_OTP"
+        target_case["stage_number"] = 5
+        _add_timeline_event(
+            target_case,
+            "Resolution Proof Verified by Bureau Officer",
+            f"Action Taken Report and payment vouchers cleared quality scrutiny. OTP dispatched to complainant for final closure verification. Remarks: {req.remarks}",
+            req.officer_name,
+            "AICTE PGRC Officer"
+        )
+        return {
+            "success": True,
+            "status": "ACCEPTED_FOR_OTP",
+            "message": f"Resolution validated. Complainant OTP dispatched for case {req.complaint_id}."
+        }
+
+    elif req.action == "REJECT_FAKE_CLOSURE":
+        target_proof["status"] = "REJECTED"
+        target_case["current_stage"] = "UNDER_INVESTIGATION"
+        target_case["stage_number"] = 3
+        _add_timeline_event(
+            target_case,
+            "Resolution Proof Disallowed (Quality Gate Rejection)",
+            f"Institutional Action Taken Report rejected as evasive/unsubstantiated by Quality Validator. Remarks: {req.remarks}. Formal compliance notice served to Institution Nodal Officer.",
+            req.officer_name,
+            "AICTE PGRC Officer"
+        )
+        return {
+            "success": True,
+            "status": "REJECTED",
+            "message": f"Fake closure disallowed. Statutory warning issued to {target_proof.get('institution_name')}."
+        }
+
+    else:
+        # Disputed by citizen
+        target_proof["status"] = "DISPUTED"
+        target_proof["complainant_dispute_filed"] = True
+        target_proof["dispute_reason"] = req.remarks
+        target_case["current_stage"] = "ESCALATED"
+        target_case["stage_number"] = 4
+        _add_timeline_event(
+            target_case,
+            "Complainant Refused OTP / Filed Dispute",
+            f"Citizen contested institutional closure claim: '{req.remarks}'. Escalated to State Technical Ombudsman.",
+            "Complainant",
+            "Citizen"
+        )
+        return {
+            "success": True,
+            "status": "DISPUTED",
+            "message": f"Dispute recorded. Case {req.complaint_id} escalated to Ombudsman tier."
         }
 

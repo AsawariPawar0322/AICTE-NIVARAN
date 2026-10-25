@@ -167,12 +167,21 @@ export interface ResolutionProofItem {
   proposedResolutionSummary: string;
   proofDocumentName: string;
   proofSha256: string;
-  status: 'PENDING_REVIEW' | 'ACCEPTED' | 'DISPUTED' | 'REJECTED';
+  status: 'PENDING_REVIEW' | 'ACCEPTED' | 'ACCEPTED_FOR_OTP' | 'DISPUTED' | 'REJECTED';
   reviewerRemarks?: string;
   reviewedAt?: string;
   reviewedBy?: string;
   complainantDisputeFiled?: boolean;
   disputeReason?: string;
+  // Closure-Quality Scrutiny Metadata
+  qualityScore?: number;
+  qualityVerdict?: 'PASSED_QUALITY_GATE' | 'SUSPICIOUS_LOW_QUALITY' | 'FLAGGED_EVASIVE_CLOSURE';
+  statusLabel?: string;
+  canDispatchOtp?: boolean;
+  extractedUtr?: string | null;
+  riskFlags?: string[];
+  scrutinyReasons?: string[];
+  similarityToPastAtr?: number;
 }
 
 export interface ComplaintPoolGroup {

@@ -114,3 +114,33 @@ class LinkActionRequest(BaseModel):
     officer_name: str
     rejection_reason: Optional[str] = None
 
+
+class AtrEvaluationRequest(BaseModel):
+    complaint_id: str
+    category: str
+    atr_text: str
+    voucher_name: Optional[str] = None
+    voucher_sha256: Optional[str] = None
+    institution_id: Optional[str] = None
+
+
+class AtrQualityResult(BaseModel):
+    proof_id: Optional[str] = None
+    complaint_id: str
+    quality_score: int
+    verdict: Literal["PASSED_QUALITY_GATE", "SUSPICIOUS_LOW_QUALITY", "FLAGGED_EVASIVE_CLOSURE"]
+    status_label: str
+    can_dispatch_otp: bool
+    extracted_utr: Optional[str] = None
+    risk_flags: List[str] = []
+    reasons: List[str] = []
+    similarity_to_past_atr: float = 0.0
+
+
+class AtrScrutinyDecisionRequest(BaseModel):
+    proof_id: str
+    complaint_id: str
+    action: Literal["APPROVE_AND_DISPATCH_OTP", "REJECT_FAKE_CLOSURE", "DISPUTED_BY_CITIZEN"]
+    officer_name: str
+    remarks: str
+
