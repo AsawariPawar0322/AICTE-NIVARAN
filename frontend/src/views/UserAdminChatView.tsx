@@ -2,18 +2,8 @@ import React, { useState } from 'react';
 import { translations, Language } from '../locales/translations';
 import { ActiveTab } from '../components/Navbar';
 import { Complaint, UserAdminMessage } from '../types';
-import { 
-  Send, 
-  Paperclip, 
-  ShieldCheck, 
-  MessageSquare, 
-  Clock, 
-  CheckCheck, 
-  Building2, 
-  Info,
-  Sparkles,
-  ArrowRight
-} from 'lucide-react';
+import { Icon } from '../components/Icon';
+import { Building } from '@phosphor-icons/react';
 
 interface UserAdminChatViewProps {
   lang: Language;
@@ -87,13 +77,13 @@ export const UserAdminChatView: React.FC<UserAdminChatViewProps> = ({
           <div className="chat-header flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-3">
               <div className="officer-badge-avatar">
-                🏛️
+                <Building size={22} weight="duotone" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="officer-title-name">{complaint.assignedOfficer.name}</h3>
                   <span className="verified-official-chip flex items-center gap-1">
-                    <ShieldCheck size={12} />
+                    <Icon e="✅" size={12} />
                     Verified AICTE Officer
                   </span>
                 </div>
@@ -112,14 +102,14 @@ export const UserAdminChatView: React.FC<UserAdminChatViewProps> = ({
                 title="Click to view stage tracking"
               >
                 {complaint.id}
-                <ArrowRight size={12} />
+                <Icon e="→" size={12} />
               </button>
             </div>
           </div>
 
           {/* Official Notice Banner */}
           <div className="chat-legal-banner flex items-center gap-2">
-            <Info size={16} className="text-blue" />
+            <Icon e="ℹ️" size={16} className="text-blue" />
             <span>
               <strong>Statutory Record:</strong> Communications in this channel constitute official representations under AICTE Redressal Norms and are permanently indexed in the central audit ledger.
             </span>
@@ -159,7 +149,7 @@ export const UserAdminChatView: React.FC<UserAdminChatViewProps> = ({
 
                     {isUser && (
                       <div className="delivered-receipt flex items-center justify-end gap-1">
-                        <CheckCheck size={14} className="text-blue" />
+                        <Icon e="✓" size={14} className="text-blue" />
                         <span>Delivered & Logged</span>
                       </div>
                     )}
@@ -205,7 +195,7 @@ export const UserAdminChatView: React.FC<UserAdminChatViewProps> = ({
               title="Attach Supplementary Document / Receipt"
               onClick={() => alert('Attachment dialog: select fee receipt or photo proof to upload.')}
             >
-              <Paperclip size={18} />
+              <Icon e="📎" size={18} />
             </button>
 
             <input
@@ -225,7 +215,7 @@ export const UserAdminChatView: React.FC<UserAdminChatViewProps> = ({
               onClick={() => handleSend()}
               disabled={!inputText.trim()}
             >
-              <Send size={18} />
+              <Icon e="➤" size={18} />
               <span className="hide-on-mobile">Send</span>
             </button>
           </div>
@@ -263,7 +253,7 @@ export const UserAdminChatView: React.FC<UserAdminChatViewProps> = ({
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 1.25rem;
+          color: var(--color-brand-blue-600);
         }
         .officer-title-name {
           font-size: 1.05rem;

@@ -2,20 +2,7 @@ import React, { useState } from 'react';
 import { translations, Language } from '../locales/translations';
 import { ActiveTab } from '../components/Navbar';
 import { Complaint } from '../types';
-import {
-  FolderClock,
-  CheckCircle,
-  AlertCircle,
-  Clock,
-  FilePlus2,
-  MessageSquare,
-  ArrowRight,
-  KeyRound,
-  ShieldCheck,
-  Building,
-  User,
-  Filter
-} from 'lucide-react';
+import { Icon } from '../components/Icon';
 
 interface ComplainantDashboardProps {
   lang: Language;
@@ -25,302 +12,296 @@ interface ComplainantDashboardProps {
   onOpenChatWithComplaint: (complaint: Complaint) => void;
 }
 
+type FilterKey = 'ALL' | 'ACTION_REQUIRED' | 'ACTIVE' | 'RESOLVED';
+
+const STAGE_LABELS: Record<string, string> = {
+  REGISTERED: 'Registered',
+  ALLOTTED: 'Bureau Allotted',
+  INVESTIGATION: 'Under Investigation',
+  RESOLUTION_PROPOSED: 'ATR Proposed',
+  PENDING_OTP: 'Awaiting OTP',
+  RESOLVED: 'Resolved',
+  ESCALATED: 'Escalated',
+};
+
 export const ComplainantDashboard: React.FC<ComplainantDashboardProps> = ({
   lang,
   setActiveTab,
   complaints,
   onSelectComplaintForTracking,
-  onOpenChatWithComplaint
+  onOpenChatWithComplaint,
 }) => {
   const t = translations[lang];
-  const [filter, setFilter] = useState<'ALL' | 'ACTION_REQUIRED' | 'ACTIVE' | 'RESOLVED'>('ALL');
+  const [filter, setFilter] = useState<FilterKey>('ALL');
 
   const pendingOtpCases = complaints.filter(c => c.currentStage === 'PENDING_OTP');
-  const activeCases = complaints.filter(c => c.currentStage !== 'RESOLVED');
-  const resolvedCases = complaints.filter(c => c.currentStage === 'RESOLVED');
+  const activeCases     = complaints.filter(c => !['RESOLVED', 'ESCALATED'].includes(c.currentStage));
+  const resolvedCases   = complaints.filter(c => c.currentStage === 'RESOLVED');
 
-  const filteredComplaints = complaints.filter(c => {
+  const filtered = complaints.filter(c => {
     if (filter === 'ACTION_REQUIRED') return c.currentStage === 'PENDING_OTP';
-    if (filter === 'ACTIVE') return c.currentStage !== 'RESOLVED';
-    if (filter === 'RESOLVED') return c.currentStage === 'RESOLVED';
+    if (filter === 'ACTIVE')          return !['RESOLVED', 'ESCALATED'].includes(c.currentStage);
+    if (filter === 'RESOLVED')        return c.currentStage === 'RESOLVED';
     return true;
   });
 
+  const metrics: { key: FilterKey; label: string; value: number; accent?: string }[] = [
+    { key: 'ALL',              label: 'Total Grievances',      value: complaints.length },
+    { key: 'ACTION_REQUIRED',  label: 'OTP Action Required',   value: pendingOtpCases.length, accent: 'warning' },
+    { key: 'ACTIVE',           label: 'Under Investigation',   value: activeCases.length,     accent: 'info' },
+    { key: 'RESOLVED',         label: 'Closed & Resolved',     value: resolvedCases.length,   accent: 'success' },
+  ];
+
   return (
-    <div className="dashboard-container" id="main-content">
-      <div className="container">
-        {/* User Identity Profile Banner */}
-        <div className="user-profile-header flex items-center justify-between flex-wrap gap-4">
-          <div className="user-info flex items-center gap-3">
-            <div className="user-avatar-circle">
-              <User size={28} />
+    <div className="cd-root" id="main-content">
+      <div className="container cd-container">
+
+        {/* ── PROFILE HEADER ── */}
+        <div className="cd-profile-card">
+          <div className="cd-profile-left">
+            <div className="cd-avatar" aria-hidden="true">
+              <Icon e="??" size={24} />
             </div>
-            <div>
-              <div className="user-name-row flex items-center gap-2">
-                <h2 className="user-display-name">Aarav Sharma</h2>
-                <span className="user-role-badge">Verified Student</span>
-                <span className="nivaran-portal-tag">AICTE NIVARAN Portal</span>
+            <div className="cd-profile-info">
+              <div className="cd-name-row">
+                <h2 className="cd-name">Aarav Sharma</h2>
+                <span className="cd-verified-badge">
+                  <Icon e="?" size={12} />
+                  Verified Student
+                </span>
+                <span className="cd-portal-tag">AICTE NIVARAN</span>
               </div>
-              <p className="user-institution-sub flex items-center gap-2">
-                <Building size={14} />
-                <span>Delhi Technological University (DTU) · Roll: 2024-CS-108 · Mobile: +91 98712 34567</span>
+              <p className="cd-institution-row">
+                <Icon e="???" size={14} />
+                Delhi Technological University (DTU) · Roll: 2024-CS-108 · +91 98712 34567
               </p>
             </div>
           </div>
-
-          <div className="profile-action-buttons flex items-center gap-3">
+          <div className="cd-profile-actions">
             <button
               type="button"
-              className="btn btn-primary"
+              className="cd-btn-primary"
               onClick={() => setActiveTab('file-complaint')}
             >
-              <FilePlus2 size={16} />
+              <Icon e="??" size={15} />
               <span>{t.navFileComplaint}</span>
             </button>
             <button
               type="button"
-              className="btn btn-outline"
+              className="cd-btn-outline"
               onClick={() => setActiveTab('discord')}
             >
-              <MessageSquare size={16} />
+              <Icon e="??" size={15} />
               <span>Community Hub</span>
             </button>
           </div>
         </div>
 
-        {/* Action Required Banner if OTP pending */}
+        {/* ── OTP ACTION BANNER ── */}
         {pendingOtpCases.length > 0 && (
-          <div className="urgent-action-box flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-3">
-              <div className="pulse-icon-box">
-                <KeyRound size={24} className="text-warning-bold" />
+          <div className="cd-otp-banner" role="alert">
+            <div className="cd-otp-banner-left">
+              <div className="cd-otp-icon-box" aria-hidden="true">
+                <Icon e="🔑" size={22} />
               </div>
               <div>
-                <strong className="action-box-title">Citizen Action Required: 1 Grievance Awaiting Your OTP Acknowledgment!</strong>
-                <p className="action-box-desc">
-                  Delhi Technological University has submitted the Action Taken Report (ATR) and processed your ₹44,000 refund. Please review and input your OTP to finalize case closure or escalate.
+                <strong className="cd-otp-title">
+                  Action Required — {pendingOtpCases.length} case{pendingOtpCases.length > 1 ? 's' : ''} awaiting your OTP
+                </strong>
+                <p className="cd-otp-desc">
+                  Delhi Technological University has submitted the Action Taken Report (ATR) and processed your ₹44,000 refund. Verify OTP to finalise closure.
                 </p>
               </div>
             </div>
             <button
               type="button"
-              className="btn btn-primary btn-otp-action"
+              className="cd-otp-cta"
               onClick={() => {
                 onSelectComplaintForTracking(pendingOtpCases[0]);
                 setActiveTab('track');
               }}
             >
-              <KeyRound size={16} />
-              <span>Verify OTP & Close Case</span>
-              <ArrowRight size={16} />
+              <Icon e="🔑" size={15} />
+              <span>Verify OTP &amp; Close Case</span>
+              <Icon e="→" size={15} />
             </button>
           </div>
         )}
 
-        {/* Metric Summary Cards */}
-        <div className="grid grid-cols-4 gap-4 dashboard-metrics-row">
-          <div
-            className={`metric-tile ${filter === 'ALL' ? 'active-metric' : ''}`}
-            onClick={() => setFilter('ALL')}
-          >
-            <div className="metric-header flex items-center justify-between">
-              <span className="metric-label">Total Grievances</span>
-              <FolderClock size={18} className="text-muted" />
-            </div>
-            <div className="metric-value">{complaints.length}</div>
-            <span className="metric-sub">Across all categories</span>
-          </div>
-
-          <div
-            className={`metric-tile tile-action ${filter === 'ACTION_REQUIRED' ? 'active-metric' : ''}`}
-            onClick={() => setFilter('ACTION_REQUIRED')}
-          >
-            <div className="metric-header flex items-center justify-between">
-              <span className="metric-label">Action / OTP Required</span>
-              <AlertCircle size={18} className="text-warning-bold" />
-            </div>
-            <div className="metric-value text-warning-bold">{pendingOtpCases.length}</div>
-            <span className="metric-sub">Needs complainant input</span>
-          </div>
-
-          <div
-            className={`metric-tile ${filter === 'ACTIVE' ? 'active-metric' : ''}`}
-            onClick={() => setFilter('ACTIVE')}
-          >
-            <div className="metric-header flex items-center justify-between">
-              <span className="metric-label">Under Investigation</span>
-              <Clock size={18} className="text-blue" />
-            </div>
-            <div className="metric-value">{activeCases.length}</div>
-            <span className="metric-sub">Within 72h SLA buffer</span>
-          </div>
-
-          <div
-            className={`metric-tile ${filter === 'RESOLVED' ? 'active-metric' : ''}`}
-            onClick={() => setFilter('RESOLVED')}
-          >
-            <div className="metric-header flex items-center justify-between">
-              <span className="metric-label">Closed & Resolved</span>
-              <CheckCircle size={18} className="text-green" />
-            </div>
-            <div className="metric-value text-green">{resolvedCases.length}</div>
-            <span className="metric-sub">OTP Verified Closures</span>
-          </div>
+        {/* ── METRICS ── */}
+        <div className="cd-metrics-grid" role="list" aria-label="Grievance summary">
+          {metrics.map((m) => (
+            <button
+              key={m.key}
+              type="button"
+              role="listitem"
+              className={`cd-metric-tile cd-metric-${m.accent || 'default'} ${filter === m.key ? 'cd-metric-active' : ''}`}
+              onClick={() => setFilter(m.key)}
+              aria-pressed={filter === m.key}
+            >
+              <span className="cd-metric-label">{m.label}</span>
+              <span className="cd-metric-value">{m.value}</span>
+              <span className="cd-metric-sub">
+                {m.key === 'ALL'             && 'All categories'}
+                {m.key === 'ACTION_REQUIRED' && 'Needs your input'}
+                {m.key === 'ACTIVE'          && 'Within 72h SLA'}
+                {m.key === 'RESOLVED'        && 'OTP verified'}
+              </span>
+            </button>
+          ))}
         </div>
 
-        {/* Complaints Data Feed */}
-        <div className="complaints-feed-card card">
-          <div className="feed-header flex items-center justify-between flex-wrap gap-3">
+        {/* ── COMPLAINTS FEED ── */}
+        <div className="cd-feed-card">
+          <div className="cd-feed-header">
             <div>
-              <h3>My Grievances & Redressal Records</h3>
-              <p className="feed-sub">Review stage progress, official remarks, proof integrity, and verify closure.</p>
+              <h3 className="cd-feed-title">My Grievances</h3>
+              <p className="cd-feed-sub">Track stage progress, proof integrity, and verify closure.</p>
             </div>
-
-            <div className="filter-chips-row flex items-center gap-2">
-              <Filter size={16} className="text-muted" />
-              <button
-                type="button"
-                className={`filter-chip ${filter === 'ALL' ? 'active' : ''}`}
-                onClick={() => setFilter('ALL')}
-              >
-                All ({complaints.length})
-              </button>
-              <button
-                type="button"
-                className={`filter-chip ${filter === 'ACTION_REQUIRED' ? 'active' : ''}`}
-                onClick={() => setFilter('ACTION_REQUIRED')}
-              >
-                OTP Pending ({pendingOtpCases.length})
-              </button>
-              <button
-                type="button"
-                className={`filter-chip ${filter === 'ACTIVE' ? 'active' : ''}`}
-                onClick={() => setFilter('ACTIVE')}
-              >
-                Active ({activeCases.length})
-              </button>
-              <button
-                type="button"
-                className={`filter-chip ${filter === 'RESOLVED' ? 'active' : ''}`}
-                onClick={() => setFilter('RESOLVED')}
-              >
-                Resolved ({resolvedCases.length})
-              </button>
+            <div className="cd-filter-row" role="group" aria-label="Filter complaints">
+              <Icon e="⚙️" size={15} className="cd-filter-icon" aria-hidden="true" />
+              {metrics.map((m) => (
+                <button
+                  key={m.key}
+                  type="button"
+                  className={`cd-filter-chip ${filter === m.key ? 'cd-filter-active' : ''}`}
+                  onClick={() => setFilter(m.key)}
+                  aria-pressed={filter === m.key}
+                >
+                  {m.key === 'ALL' ? `All (${complaints.length})` :
+                   m.key === 'ACTION_REQUIRED' ? `OTP (${pendingOtpCases.length})` :
+                   m.key === 'ACTIVE' ? `Active (${activeCases.length})` :
+                   `Resolved (${resolvedCases.length})`}
+                </button>
+              ))}
             </div>
           </div>
 
-          <div className="complaints-list">
-            {filteredComplaints.length === 0 ? (
-              <div className="empty-state-box text-center">
-                <FolderClock size={40} className="empty-icon" />
-                <p>No grievances found matching this filter.</p>
+          <div className="cd-complaints-list">
+            {filtered.length === 0 ? (
+              <div className="cd-empty-state">
+                <Icon e="??" size={40} />
+                <p>No complaints match this filter.</p>
               </div>
             ) : (
-              filteredComplaints.map((item) => {
-                const isOtpPending = item.currentStage === 'PENDING_OTP';
+              filtered.map((item) => {
+                const isOtp      = item.currentStage === 'PENDING_OTP';
                 const isResolved = item.currentStage === 'RESOLVED';
+                const isEscalated = item.currentStage === 'ESCALATED';
 
                 return (
-                  <div key={item.id} className={`complaint-row-item ${isOtpPending ? 'highlight-row' : ''}`}>
-                    <div className="row-meta-top flex items-center justify-between flex-wrap gap-2">
-                      <div className="case-id-cluster flex items-center gap-2">
-                        <code className="case-id-badge mono">{item.id}</code>
-                        <span className="category-pill">{item.categoryLabel}</span>
-                        {item.relatedCaseCount && item.relatedCaseCount > 0 && (
-                          <span className="related-pill" title="Other students filed similar complaints against this college">
-                            {item.relatedCaseCount} Related Cases
+                  <article
+                    key={item.id}
+                    className={`cd-complaint-card ${isOtp ? 'cd-card-otp' : isResolved ? 'cd-card-resolved' : ''}`}
+                  >
+                    {/* Top meta row */}
+                    <div className="cd-card-top-row">
+                      <div className="cd-card-ids">
+                        <code className="cd-case-id">{item.id}</code>
+                        <span className="cd-category-chip">{item.categoryLabel}</span>
+                        {(item.relatedCaseCount ?? 0) > 0 && (
+                          <span className="cd-related-chip">
+                            <Icon e="??" size={11} />
+                            {item.relatedCaseCount} linked
                           </span>
                         )}
                       </div>
-
-                      <div className="stage-pill-box flex items-center gap-2">
-                        {isOtpPending ? (
-                          <span className="status-chip chip-warning">
-                            <KeyRound size={13} />
-                            Stage 5: Pending Citizen OTP
+                      <div className="cd-card-status">
+                        {isOtp ? (
+                          <span className="cd-stage-chip cd-stage-warning">
+                            <Icon e="??" size={12} />
+                            Stage 5 · OTP Required
                           </span>
                         ) : isResolved ? (
-                          <span className="status-chip chip-success">
-                            <ShieldCheck size={13} />
-                            Stage 6: Disposed & Verified
+                          <span className="cd-stage-chip cd-stage-success">
+                            <Icon e="?" size={12} />
+                            Resolved
+                          </span>
+                        ) : isEscalated ? (
+                          <span className="cd-stage-chip cd-stage-danger">
+                            <Icon e="??" size={12} />
+                            Escalated
                           </span>
                         ) : (
-                          <span className="status-chip chip-info">
-                            <Clock size={13} />
-                            Stage {item.stageNumber}: {item.currentStage}
+                          <span className="cd-stage-chip cd-stage-info">
+                            <Icon e="??" size={12} />
+                            Stage {item.stageNumber} · {STAGE_LABELS[item.currentStage] || item.currentStage}
                           </span>
                         )}
-
-                        <span className="sla-badge flex items-center gap-1">
-                          <Clock size={12} />
-                          {item.slaHoursRemaining > 0 ? `${item.slaHoursRemaining}h SLA Left` : 'SLA Satisfied'}
+                        <span className="cd-sla-pill">
+                          <Icon e="??" size={11} />
+                          {item.slaHoursRemaining > 0 ? `${item.slaHoursRemaining}h SLA` : 'SLA Met'}
                         </span>
                       </div>
                     </div>
 
-                    <h4 className="complaint-item-title">{item.title}</h4>
-                    <p className="complaint-item-desc">{item.details}</p>
+                    {/* Title + description */}
+                    <h4 className="cd-card-title">{item.title}</h4>
+                    <p className="cd-card-desc">{item.details}</p>
 
-                    <div className="complaint-institution-strip flex items-center justify-between flex-wrap gap-2">
-                      <div className="inst-detail">
-                        <strong>Institution:</strong> {item.institutionName} (<code className="mono">{item.aictePermanentId}</code>) · Assigned to: <em>{item.assignedOfficer.name} ({item.assignedOfficer.bureau})</em>
+                    {/* Institution strip */}
+                    <div className="cd-inst-strip">
+                      <div className="cd-inst-left">
+                        <Icon e="???" size={13} />
+                        <span>
+                          <strong>{item.institutionName}</strong>
+                          <code className="cd-inst-id">({item.aictePermanentId})</code>
+                        </span>
+                        <span className="cd-inst-sep">·</span>
+                        <span>Officer: {item.assignedOfficer.name}</span>
                       </div>
-                      <div className="proof-count-tag">
-                        {item.evidenceList.length} Cryptographic Proof(s) Attached
-                      </div>
+                      <span className="cd-proof-count">
+                        <Icon e="??" size={12} />
+                        {item.evidenceList.length} proof file{item.evidenceList.length !== 1 ? 's' : ''}
+                      </span>
                     </div>
 
-                    {/* Action Taken Report preview for OTP pending */}
-                    {isOtpPending && item.resolutionProposedDetails && (
-                      <div className="atr-preview-box">
-                        <div className="atr-head flex items-center justify-between">
-                          <strong className="atr-title">Proposed Resolution by DTU Accounts Bureau:</strong>
-                          <span className="atr-ref">Order: {item.resolutionProposedDetails.officialOrderRef}</span>
+                    {/* ATR preview for OTP pending */}
+                    {isOtp && item.resolutionProposedDetails && (
+                      <div className="cd-atr-preview">
+                        <div className="cd-atr-header">
+                          <span className="cd-atr-label">Action Taken Report — {item.resolutionProposedDetails.officialOrderRef}</span>
+                          <span className="cd-atr-amount">
+                            Refund: <strong>{item.resolutionProposedDetails.refundAmount}</strong>
+                          </span>
                         </div>
-                        <p className="atr-text">{item.resolutionProposedDetails.atrSummary}</p>
-                        <div className="atr-bottom-row flex items-center justify-between">
-                          <span className="atr-amount">Refund Amount: <strong>{item.resolutionProposedDetails.refundAmount}</strong></span>
-                          <span className="atr-help-text">Please verify receipt in your bank account and submit OTP.</span>
-                        </div>
+                        <p className="cd-atr-summary">{item.resolutionProposedDetails.atrSummary}</p>
                       </div>
                     )}
 
                     {/* Action buttons */}
-                    <div className="row-action-bar flex items-center justify-end gap-3">
+                    <div className="cd-card-actions">
                       <button
                         type="button"
-                        className="btn btn-outline btn-sm"
-                        onClick={() => {
-                          onOpenChatWithComplaint(item);
-                          setActiveTab('chat');
-                        }}
+                        className="cd-action-btn cd-action-secondary"
+                        onClick={() => onOpenChatWithComplaint(item)}
                       >
-                        <MessageSquare size={14} />
-                        <span>Chat with Nodal Officer</span>
+                        <Icon e="??" size={14} />
+                        <span>Chat with Officer</span>
                       </button>
 
                       <button
                         type="button"
-                        className={`btn btn-sm ${isOtpPending ? 'btn-primary' : 'btn-secondary'}`}
+                        className={`cd-action-btn ${isOtp ? 'cd-action-primary-otp' : 'cd-action-primary'}`}
                         onClick={() => {
                           onSelectComplaintForTracking(item);
                           setActiveTab('track');
                         }}
                       >
-                        {isOtpPending ? (
+                        {isOtp ? (
                           <>
-                            <KeyRound size={14} />
-                            <span>Verify OTP for Closure</span>
+                            <Icon e="??" size={14} />
+                            <span>Verify OTP &amp; Close</span>
                           </>
                         ) : (
                           <>
-                            <span>View Stage Timeline</span>
-                            <ArrowRight size={14} />
+                            <span>View Timeline</span>
+                            <Icon e="�" size={14} />
                           </>
                         )}
                       </button>
                     </div>
-                  </div>
+                  </article>
                 );
               })
             )}
@@ -329,260 +310,546 @@ export const ComplainantDashboard: React.FC<ComplainantDashboardProps> = ({
       </div>
 
       <style>{`
-        .dashboard-container {
-          padding: 32px 0 64px 0;
+        /* ── ROOT ── */
+        .cd-root {
+          background: var(--color-neutral-100);
+          padding: 32px 0 72px;
+          min-height: calc(100vh - 160px);
         }
-        .user-profile-header {
-          background-color: #FFFFFF;
-          border: 1px solid var(--color-neutral-300);
+        .cd-container { max-width: 1100px; }
+
+        /* ── PROFILE CARD ── */
+        .cd-profile-card {
+          background: #fff;
+          border: 1px solid var(--color-neutral-200);
           border-radius: var(--radius-lg);
-          padding: 24px;
-          margin-bottom: 24px;
+          padding: 24px 28px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 20px;
+          flex-wrap: wrap;
+          margin-bottom: 20px;
           box-shadow: var(--shadow-sm);
         }
-        .user-avatar-circle {
-          width: 54px;
-          height: 54px;
+        .cd-profile-left {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          flex: 1;
+          min-width: 0;
+        }
+        .cd-avatar {
+          width: 52px;
+          height: 52px;
           border-radius: 50%;
-          background: #EFF6FF;
+          background: var(--color-brand-blue-100);
           color: var(--color-brand-blue-600);
           display: flex;
           align-items: center;
           justify-content: center;
           border: 2px solid #BFDBFE;
+          flex-shrink: 0;
         }
-        .user-display-name {
-          font-size: 1.35rem;
-          font-weight: 700;
+        .cd-profile-info { min-width: 0; }
+        .cd-name-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+          margin-bottom: 4px;
         }
-        .user-role-badge {
-          background-color: #DCFCE7;
-          color: #166534;
-          font-size: 0.75rem;
-          font-weight: 700;
-          padding: 2px 8px;
-          border-radius: var(--radius-pill);
+        .cd-name {
+          font-size: 1.3rem;
+          font-weight: 800;
+          color: var(--color-navy-900);
+          margin: 0;
+          line-height: 1.2;
         }
-        .nivaran-portal-tag {
-          background-color: #EFF6FF;
-          color: var(--color-brand-blue-600);
-          border: 1px solid #BFDBFE;
+        .cd-verified-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          background: var(--color-success-bg);
+          color: var(--color-success-text);
           font-size: 0.72rem;
           font-weight: 700;
           padding: 2px 8px;
           border-radius: var(--radius-pill);
+          border: 1px solid var(--color-success-border);
         }
-        .user-institution-sub {
-          font-size: 0.85rem;
+        .cd-portal-tag {
+          background: var(--color-brand-blue-100);
+          color: var(--color-brand-blue-600);
+          border: 1px solid #BFDBFE;
+          font-size: 0.7rem;
+          font-weight: 700;
+          padding: 2px 8px;
+          border-radius: var(--radius-pill);
+        }
+        .cd-institution-row {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 0.8125rem;
           color: var(--color-neutral-600);
-          margin-top: 4px;
+          margin: 0;
+          flex-wrap: wrap;
         }
-
-        .urgent-action-box {
-          background-color: #FEF3C7;
-          border: 2px solid #F59E0B;
+        .cd-institution-row svg { flex-shrink: 0; }
+        .cd-profile-actions {
+          display: flex;
+          gap: 10px;
+          flex-shrink: 0;
+        }
+        .cd-btn-primary {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          background: var(--color-action-600);
+          color: #fff;
+          border: none;
           border-radius: var(--radius-md);
-          padding: 18px 24px;
-          margin-bottom: 24px;
-          box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+          padding: 9px 18px;
+          font-size: 0.875rem;
+          font-weight: 700;
+          cursor: pointer;
+          min-height: 40px;
+          font-family: var(--font-sans);
+          transition: background-color 0.15s ease;
         }
-        .pulse-icon-box {
-          background: #FDE68A;
+        .cd-btn-primary:hover { background: var(--color-action-700); }
+        .cd-btn-outline {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          background: transparent;
+          color: var(--color-navy-900);
+          border: 1px solid var(--color-neutral-300);
+          border-radius: var(--radius-md);
+          padding: 9px 18px;
+          font-size: 0.875rem;
+          font-weight: 600;
+          cursor: pointer;
+          min-height: 40px;
+          font-family: var(--font-sans);
+          transition: border-color 0.15s ease;
+        }
+        .cd-btn-outline:hover { border-color: var(--color-navy-900); }
+
+        /* ── OTP BANNER ── */
+        .cd-otp-banner {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          flex-wrap: wrap;
+          background: var(--color-warning-bg);
+          border: 2px solid var(--color-warning-border);
+          border-radius: var(--radius-md);
+          padding: 18px 22px;
+          margin-bottom: 20px;
+        }
+        .cd-otp-banner-left {
+          display: flex;
+          align-items: flex-start;
+          gap: 14px;
+          flex: 1;
+          min-width: 0;
+        }
+        .cd-otp-icon-box {
           width: 44px;
           height: 44px;
+          background: #FDE68A;
           border-radius: var(--radius-md);
           display: flex;
           align-items: center;
           justify-content: center;
+          color: #92400E;
           flex-shrink: 0;
         }
-        .text-warning-bold {
-          color: #B45309;
-        }
-        .action-box-title {
-          color: #92400E;
-          font-size: 1rem;
+        .cd-otp-title {
           display: block;
+          font-size: 0.95rem;
+          color: #92400E;
+          margin-bottom: 3px;
         }
-        .action-box-desc {
-          font-size: 0.875rem;
-          color: #78350F;
-          margin-top: 2px;
-        }
-        .btn-otp-action {
-          white-space: nowrap;
-          padding: 10px 20px;
-        }
-
-        .dashboard-metrics-row {
-          margin-bottom: 28px;
-        }
-        .metric-tile {
-          background: #FFFFFF;
-          border: 1px solid var(--color-neutral-300);
-          border-radius: var(--radius-md);
-          padding: 18px;
-          cursor: pointer;
-          transition: border-color 0.15s ease, box-shadow 0.15s ease;
-        }
-        .metric-tile:hover {
-          border-color: var(--color-brand-blue-600);
-        }
-        .active-metric {
-          border-color: var(--color-brand-blue-600);
-          background-color: #F8FAFC;
-          box-shadow: 0 0 0 2px rgba(31, 95, 191, 0.2);
-        }
-        .tile-action {
-          border-left: 4px solid #F59E0B;
-        }
-        .metric-label {
+        .cd-otp-desc {
           font-size: 0.8125rem;
-          font-weight: 600;
-          color: var(--color-neutral-600);
+          color: #78350F;
+          margin: 0;
+          line-height: 1.45;
         }
-        .metric-value {
-          font-size: 1.85rem;
-          font-weight: 800;
+        .cd-otp-cta {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          background: var(--color-action-600);
+          color: #fff;
+          border: none;
+          border-radius: var(--radius-md);
+          padding: 10px 20px;
+          font-size: 0.875rem;
+          font-weight: 700;
+          cursor: pointer;
+          white-space: nowrap;
+          min-height: 44px;
+          font-family: var(--font-sans);
+          transition: background-color 0.15s ease;
+          flex-shrink: 0;
+        }
+        .cd-otp-cta:hover { background: var(--color-action-700); }
+
+        /* ── METRICS ── */
+        .cd-metrics-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 14px;
+          margin-bottom: 20px;
+        }
+        .cd-metric-tile {
+          background: #fff;
+          border: 1px solid var(--color-neutral-200);
+          border-radius: var(--radius-md);
+          padding: 20px 18px;
+          text-align: left;
+          cursor: pointer;
+          font-family: var(--font-sans);
+          transition: border-color 0.15s ease, box-shadow 0.15s ease;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .cd-metric-tile:hover { border-color: var(--color-brand-blue-600); }
+        .cd-metric-active {
+          border-color: var(--color-brand-blue-600) !important;
+          box-shadow: 0 0 0 3px rgba(31,95,191,0.12);
+        }
+        .cd-metric-warning { border-left: 4px solid #F59E0B; }
+        .cd-metric-info    { border-left: 4px solid var(--color-brand-blue-600); }
+        .cd-metric-success { border-left: 4px solid #16A34A; }
+        .cd-metric-label {
+          font-size: 0.78rem;
+          font-weight: 700;
+          color: var(--color-neutral-600);
+          text-transform: uppercase;
+          letter-spacing: 0.3px;
+        }
+        .cd-metric-value {
+          font-size: 2rem;
+          font-weight: 900;
           color: var(--color-navy-900);
           font-family: var(--font-mono);
-          margin: 6px 0 2px 0;
+          line-height: 1.1;
         }
-        .metric-sub {
-          font-size: 0.75rem;
+        .cd-metric-sub {
+          font-size: 0.72rem;
           color: var(--color-neutral-400);
         }
 
-        .feed-header {
+        /* ── FEED CARD ── */
+        .cd-feed-card {
+          background: #fff;
+          border: 1px solid var(--color-neutral-200);
+          border-radius: var(--radius-lg);
+          overflow: hidden;
+          box-shadow: var(--shadow-sm);
+        }
+        .cd-feed-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 16px;
+          padding: 20px 24px;
           border-bottom: 1px solid var(--color-neutral-200);
-          padding-bottom: 16px;
-          margin-bottom: 20px;
         }
-        .feed-sub {
-          font-size: 0.85rem;
+        .cd-feed-title {
+          font-size: 1.1rem;
+          font-weight: 700;
+          color: var(--color-navy-900);
+          margin: 0 0 3px;
+        }
+        .cd-feed-sub {
+          font-size: 0.8125rem;
           color: var(--color-neutral-600);
-          margin-top: 2px;
+          margin: 0;
         }
-        .filter-chip {
+        .cd-filter-row {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+        .cd-filter-icon { color: var(--color-neutral-400); flex-shrink: 0; }
+        .cd-filter-chip {
           background: var(--color-neutral-100);
           border: 1px solid var(--color-neutral-300);
           color: var(--color-neutral-700);
-          font-size: 0.8rem;
+          font-size: 0.78rem;
           font-weight: 600;
           padding: 4px 10px;
           border-radius: var(--radius-pill);
           cursor: pointer;
+          font-family: var(--font-sans);
+          transition: all 0.15s ease;
+          min-height: 30px;
         }
-        .filter-chip.active {
-          background: var(--color-navy-900);
-          color: #FFFFFF;
-          border-color: var(--color-navy-900);
+        .cd-filter-chip:hover { border-color: var(--color-navy-900); color: var(--color-navy-900); }
+        .cd-filter-active {
+          background: var(--color-navy-900) !important;
+          color: #fff !important;
+          border-color: var(--color-navy-900) !important;
         }
 
-        .complaint-row-item {
-          background: #FFFFFF;
-          border: 1px solid var(--color-neutral-300);
+        /* ── COMPLAINT CARDS ── */
+        .cd-complaints-list { padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; }
+        .cd-complaint-card {
+          background: #fff;
+          border: 1px solid var(--color-neutral-200);
           border-radius: var(--radius-md);
           padding: 20px;
-          margin-bottom: 16px;
           transition: border-color 0.15s ease;
         }
-        .highlight-row {
-          border: 2px solid #F59E0B;
-          background: #FFFDF7;
+        .cd-complaint-card:hover { border-color: var(--color-neutral-300); }
+        .cd-card-otp {
+          border: 2px solid var(--color-warning-border);
+          background: #FFFDF5;
         }
-        .case-id-badge {
-          background: var(--color-neutral-100);
-          color: var(--color-navy-900);
+        .cd-card-resolved {
+          border-color: var(--color-success-border);
+          background: #FAFFFE;
+        }
+        .cd-card-top-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          flex-wrap: wrap;
+          margin-bottom: 10px;
+        }
+        .cd-card-ids {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          flex-wrap: wrap;
+        }
+        .cd-case-id {
+          font-family: var(--font-mono);
+          font-size: 0.82rem;
           font-weight: 700;
-          font-size: 0.85rem;
+          color: var(--color-navy-900);
+          background: var(--color-neutral-100);
+          border: 1px solid var(--color-neutral-300);
           padding: 2px 8px;
           border-radius: var(--radius-sm);
-          border: 1px solid var(--color-neutral-300);
         }
-        .category-pill {
-          background: #EFF6FF;
-          color: #1E40AF;
-          font-size: 0.75rem;
-          font-weight: 600;
+        .cd-category-chip {
+          background: var(--color-brand-blue-100);
+          color: var(--color-brand-blue-600);
+          font-size: 0.72rem;
+          font-weight: 700;
           padding: 2px 8px;
           border-radius: var(--radius-pill);
         }
-        .related-pill {
+        .cd-related-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
           background: #F3E8FF;
           color: #6B21A8;
-          font-size: 0.72rem;
-          font-weight: 600;
-          padding: 2px 8px;
+          font-size: 0.7rem;
+          font-weight: 700;
+          padding: 2px 7px;
           border-radius: var(--radius-pill);
         }
-        .sla-badge {
-          font-size: 0.75rem;
-          color: #475569;
-          background: #F1F5F9;
-          padding: 3px 8px;
-          border-radius: var(--radius-sm);
+        .cd-card-status {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          flex-wrap: wrap;
         }
-        .complaint-item-title {
-          font-size: 1.1rem;
+        .cd-stage-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          font-size: 0.75rem;
           font-weight: 700;
-          margin: 10px 0 6px 0;
-          color: var(--color-navy-900);
+          padding: 3px 10px;
+          border-radius: var(--radius-pill);
+          white-space: nowrap;
         }
-        .complaint-item-desc {
-          font-size: 0.9rem;
-          color: var(--color-neutral-700);
-          line-height: 1.4;
-          margin-bottom: 12px;
-        }
-        .complaint-institution-strip {
+        .cd-stage-warning { background: var(--color-warning-bg); color: var(--color-warning-text); border: 1px solid var(--color-warning-border); }
+        .cd-stage-success { background: var(--color-success-bg); color: var(--color-success-text); border: 1px solid var(--color-success-border); }
+        .cd-stage-info    { background: var(--color-info-bg);    color: var(--color-info-text);    border: 1px solid var(--color-info-border); }
+        .cd-stage-danger  { background: var(--color-danger-bg);  color: var(--color-danger-text);  border: 1px solid var(--color-danger-border); }
+        .cd-sla-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 0.72rem;
+          color: var(--color-neutral-600);
           background: var(--color-neutral-100);
-          padding: 8px 12px;
+          border: 1px solid var(--color-neutral-200);
+          padding: 2px 8px;
           border-radius: var(--radius-sm);
-          font-size: 0.8125rem;
+        }
+        .cd-card-title {
+          font-size: 1rem;
+          font-weight: 700;
+          color: var(--color-navy-900);
+          margin: 0 0 6px;
+          line-height: 1.35;
+        }
+        .cd-card-desc {
+          font-size: 0.875rem;
+          color: var(--color-neutral-700);
+          line-height: 1.5;
+          margin: 0 0 12px;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+        .cd-inst-strip {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          background: var(--color-neutral-100);
+          border-radius: var(--radius-sm);
+          padding: 7px 12px;
+          font-size: 0.78rem;
           color: var(--color-neutral-700);
           margin-bottom: 14px;
+          flex-wrap: wrap;
         }
-        .proof-count-tag {
-          font-weight: 600;
-          color: var(--color-brand-blue-600);
+        .cd-inst-left {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-wrap: wrap;
+          flex: 1;
+          min-width: 0;
         }
-
-        .atr-preview-box {
-          background: #F0FDF4;
-          border: 1px solid #86EFAC;
-          border-radius: var(--radius-sm);
-          padding: 12px 16px;
-          margin-bottom: 14px;
-        }
-        .atr-head {
-          font-size: 0.85rem;
-          color: #166534;
-        }
-        .atr-ref {
-          font-size: 0.75rem;
+        .cd-inst-left svg { color: var(--color-neutral-400); flex-shrink: 0; }
+        .cd-inst-id {
           font-family: var(--font-mono);
-          color: #15803D;
-        }
-        .atr-text {
-          font-size: 0.875rem;
-          color: #14532D;
-          margin: 4px 0;
-        }
-        .atr-bottom-row {
-          font-size: 0.8rem;
-          color: #166534;
-        }
-        .atr-amount strong {
-          color: #15803D;
-        }
-        .empty-state-box {
-          padding: 40px;
+          font-size: 0.75rem;
           color: var(--color-neutral-600);
         }
-        .empty-icon {
+        .cd-inst-sep { color: var(--color-neutral-300); }
+        .cd-proof-count {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-weight: 700;
+          color: var(--color-brand-blue-600);
+          white-space: nowrap;
+        }
+
+        /* ATR preview */
+        .cd-atr-preview {
+          background: var(--color-success-bg);
+          border: 1px solid var(--color-success-border);
+          border-radius: var(--radius-sm);
+          padding: 12px 14px;
+          margin-bottom: 14px;
+        }
+        .cd-atr-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          margin-bottom: 5px;
+          flex-wrap: wrap;
+        }
+        .cd-atr-label {
+          font-size: 0.75rem;
+          font-weight: 700;
+          color: var(--color-success-text);
+        }
+        .cd-atr-amount {
+          font-size: 0.78rem;
+          color: #15803D;
+        }
+        .cd-atr-amount strong { color: #14532D; }
+        .cd-atr-summary {
+          font-size: 0.8125rem;
+          color: #14532D;
+          line-height: 1.45;
+          margin: 0;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+
+        /* Action buttons */
+        .cd-card-actions {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+        .cd-action-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 16px;
+          border-radius: var(--radius-md);
+          font-size: 0.825rem;
+          font-weight: 700;
+          cursor: pointer;
+          min-height: 36px;
+          font-family: var(--font-sans);
+          transition: all 0.15s ease;
+          white-space: nowrap;
+        }
+        .cd-action-secondary {
+          background: transparent;
+          color: var(--color-neutral-700);
+          border: 1px solid var(--color-neutral-300);
+        }
+        .cd-action-secondary:hover {
+          border-color: var(--color-navy-900);
+          color: var(--color-navy-900);
+        }
+        .cd-action-primary {
+          background: var(--color-navy-900);
+          color: #fff;
+          border: none;
+        }
+        .cd-action-primary:hover { background: #0E3673; }
+        .cd-action-primary-otp {
+          background: var(--color-action-600);
+          color: #fff;
+          border: none;
+        }
+        .cd-action-primary-otp:hover { background: var(--color-action-700); }
+
+        /* Empty state */
+        .cd-empty-state {
+          text-align: center;
+          padding: 48px 24px;
           color: var(--color-neutral-400);
-          margin-bottom: 8px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 10px;
+          font-size: 0.9rem;
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 900px) {
+          .cd-metrics-grid { grid-template-columns: repeat(2, 1fr); }
+          .cd-profile-card { flex-direction: column; align-items: flex-start; }
+        }
+        @media (max-width: 600px) {
+          .cd-metrics-grid { grid-template-columns: repeat(2, 1fr); }
+          .cd-profile-actions { width: 100%; }
+          .cd-btn-primary, .cd-btn-outline { flex: 1; justify-content: center; }
         }
       `}</style>
     </div>

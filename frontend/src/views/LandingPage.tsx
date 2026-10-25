@@ -2,25 +2,7 @@ import React, { useState } from 'react';
 import { translations, Language } from '../locales/translations';
 import { ActiveTab } from '../components/Navbar';
 import { Institution } from '../types';
-import { 
-  Search, 
-  Mic, 
-  FilePlus2, 
-  SearchCheck, 
-  ShieldCheck, 
-  Clock, 
-  KeyRound, 
-  Building2, 
-  CreditCard, 
-  AlertTriangle, 
-  GraduationCap, 
-  Users, 
-  Wrench, 
-  FileText, 
-  ArrowRight,
-  ExternalLink,
-  Sparkles
-} from 'lucide-react';
+import { Icon } from '../components/Icon';
 
 interface LandingPageProps {
   lang: Language;
@@ -37,589 +19,1137 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 }) => {
   const t = translations[lang];
   const [searchQuery, setSearchQuery] = useState('');
+  const [trackQuery, setTrackQuery] = useState('');
   const [isVoiceListening, setIsVoiceListening] = useState(false);
   const [searchResults, setSearchResults] = useState<Institution[]>([]);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    if (!query.trim()) {
-      setSearchResults([]);
-      return;
-    }
+    if (!query.trim()) { setSearchResults([]); return; }
     const q = query.toLowerCase();
-    const matches = institutions.filter(inst => 
-      inst.name.toLowerCase().includes(q) || 
-      inst.permanentId.toLowerCase().includes(q) ||
-      inst.city.toLowerCase().includes(q) ||
-      inst.state.toLowerCase().includes(q)
+    setSearchResults(
+      institutions.filter(inst =>
+        inst.name.toLowerCase().includes(q) ||
+        inst.permanentId.toLowerCase().includes(q) ||
+        inst.city.toLowerCase().includes(q) ||
+        inst.state.toLowerCase().includes(q)
+      )
     );
-    setSearchResults(matches);
   };
 
   const simulateVoiceSearch = () => {
     setIsVoiceListening(true);
     setTimeout(() => {
-      setSearchQuery('Delhi Technological University');
-      handleSearch('Delhi Technological University');
+      const query = 'Delhi Technological University';
+      setSearchQuery(query);
+      handleSearch(query);
       setIsVoiceListening(false);
     }, 1200);
   };
 
   return (
-    <div className="landing-page" id="main-content">
-      {/* Official AICTE Gazette Redressal Directive Banner */}
-      <section className="notice-ticker" aria-label="Official Announcements">
-        <div className="container flex items-center gap-3">
-          <span className="ticker-badge">AICTE NOTIFICATION 2026</span>
-          <div className="ticker-content">
-            <span className="ticker-text">
-              <strong>Mandatory Citizen OTP Closure:</strong> Pursuant to AICTE Grievance Regulations Chapter 7, no institution is permitted to close grievances without student/faculty OTP authorization. 72-Hour maximum first-response SLA strictly monitored.
-            </span>
-          </div>
-          <a href="#circulars" className="ticker-link flex items-center gap-1">
-            <span>Read Circular</span>
-            <ExternalLink size={12} />
-          </a>
-        </div>
-      </section>
+    <div className="lp-root" id="main-content">
 
-      {/* Hero Section */}
-      <section className="hero-section">
-        <div className="container">
-          <div className="hero-content">
-            <div className="hero-logo-lockup flex items-center justify-center gap-3 mb-3">
-              <img 
-                src="/aicte-nivaran-logo.png" 
-                alt="AICTE NIVARAN Emblem" 
-                className="hero-emblem-img"
-              />
-              <div className="hero-brand-meta text-left">
-                <span className="hero-brand-name">AICTE NIVARAN</span>
-                <span className="hero-brand-motto">अखिल भारतीय तकनीकी शिक्षा परिषद · योगः कर्मसु कौशलम्</span>
+      {/* ── MANDATE TICKER ── */}
+      <div className="lp-ticker" role="alert" aria-live="polite">
+        <div className="container lp-ticker-inner">
+          <span className="lp-ticker-badge">AICTE MANDATE 2026</span>
+          <span className="lp-ticker-text">
+            <strong>Mandatory Citizen OTP Closure:</strong> No institution may close a grievance without student/faculty OTP authorisation per AICTE Grievance Regulations Ch.7. 72-Hour SLA strictly enforced across all 12,000+ institutions.
+          </span>
+          <button type="button" className="lp-ticker-link" onClick={() => setActiveTab('admin')}>
+            Administration Portal <Icon e="›" size={13} />
+          </button>
+        </div>
+      </div>
+
+      {/* ── HERO ── */}
+      <section className="lp-hero" aria-labelledby="lp-hero-heading">
+        <div className="container lp-hero-inner">
+
+          {/* Left: Brand + Copy */}
+          <div className="lp-hero-left">
+            <div className="lp-hero-brand">
+              <img src="/aicte-nivaran-logo.png" alt="AICTE NIVARAN" className="lp-hero-logo" />
+              <div className="lp-hero-brand-text">
+                <span className="lp-hero-brand-name">AICTE NIVARAN</span>
+                <span className="lp-hero-brand-sub">अखिल भारतीय तकनीकी शिक्षा परिषद</span>
               </div>
             </div>
-            <div className="hero-pill-tag flex items-center gap-2">
-              <Sparkles size={14} className="text-warning" />
-              <span>Unified National Technical Redressal Portal · SIH26264</span>
-            </div>
-            <h1 className="hero-heading">{t.heroTitle}</h1>
-            <p className="hero-desc">{t.heroSubtitle}</p>
 
-            {/* AICTE Institution Search Bar with Voice Feature */}
-            <div className="institution-search-box">
-              <div className="search-bar-inner">
-                <Search size={22} className="search-icon" />
+            <div className="lp-sih-pill">
+              <Icon e="⚡" size={13} />
+              <span>Smart India Hackathon · Problem Statement SIH26264</span>
+            </div>
+
+            <h1 id="lp-hero-heading" className="lp-hero-h1">
+              One Portal for Every<br />
+              <span className="lp-hero-accent">Technical Grievance</span>
+            </h1>
+
+            <p className="lp-hero-desc">
+              Moving from fragmented complaint records to connected, accountable oversight for India's 12,000+ approved technical colleges. File, track, and enforce resolution — all in one place.
+            </p>
+
+            {/* CTA row */}
+            <div className="lp-hero-ctas">
+              <button
+                type="button"
+                className="lp-btn-primary"
+                onClick={() => setActiveTab('citizen-login')}
+              >
+                <Icon e="📝" size={18} />
+                <span>File a Grievance</span>
+              </button>
+              <button
+                type="button"
+                className="lp-btn-secondary"
+                onClick={() => setActiveTab('track')}
+              >
+                <Icon e="🔍" size={18} />
+                <span>Track Existing Case</span>
+              </button>
+            </div>
+
+            {/* Trust badges */}
+            <div className="lp-trust-row">
+              <div className="lp-trust-item">
+                <Icon e="✅" size={15} />
+                <span>WCAG 2.1 AA</span>
+              </div>
+              <div className="lp-trust-item">
+                <Icon e="🔒" size={15} />
+                <span>256-Bit SSL</span>
+              </div>
+              <div className="lp-trust-item">
+                <Icon e="🌐" size={15} />
+                <span>GIGW 3.0 Compliant</span>
+              </div>
+              <div className="lp-trust-item">
+                <Icon e="🔑" size={15} />
+                <span>OTP Protected Closure</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Search + Quick Track */}
+          <div className="lp-hero-right">
+            <div className="lp-search-card">
+              <div className="lp-search-card-head">
+                <Icon e="🏛️" size={20} />
+                <div>
+                  <strong>Find Your Institution</strong>
+                  <span>Search by name, city or AICTE ID</span>
+                </div>
+              </div>
+
+              <div className="lp-search-bar">
+                <Icon e="🔍" size={18} className="lp-search-icon" />
                 <input
                   type="text"
-                  className="search-input"
-                  placeholder={t.searchPlaceholder}
+                  className="lp-search-input"
+                  placeholder="e.g. Delhi Technological University…"
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
-                  aria-label="Search Institute by Name or Permanent ID"
+                  aria-label="Search institution by name or ID"
                 />
                 <button
                   type="button"
-                  className={`voice-btn ${isVoiceListening ? 'listening' : ''}`}
+                  className={`lp-voice-btn ${isVoiceListening ? 'listening' : ''}`}
                   onClick={simulateVoiceSearch}
-                  title={isVoiceListening ? 'Listening...' : t.voiceSearchTooltip}
+                  title={isVoiceListening ? 'Listening…' : 'Voice Search'}
+                  aria-label="Voice search"
                 >
-                  <Mic size={18} />
-                  {isVoiceListening && <span className="voice-wave">Listening...</span>}
+                  <Icon e="🎤" size={16} />
                 </button>
-                <button 
-                  type="button" 
-                  className="btn btn-primary search-action-btn"
+                <button
+                  type="button"
+                  className="lp-search-go"
                   onClick={() => handleSearch(searchQuery)}
                 >
-                  {t.findInstituteBtn}
+                  Search
                 </button>
               </div>
 
-              {/* Instant Search Results Dropdown */}
+              {/* Dropdown results */}
               {searchResults.length > 0 && (
-                <div className="search-dropdown-results" role="listbox">
-                  <div className="dropdown-header">
-                    Found {searchResults.length} Verified AICTE Approved Institution(s):
+                <div className="lp-search-dropdown" role="listbox" aria-label="Search results">
+                  <div className="lp-dropdown-hdr">
+                    {searchResults.length} institution(s) found
                   </div>
                   {searchResults.map((inst) => (
-                    <div 
-                      key={inst.id} 
-                      className="result-item flex items-center justify-between"
+                    <button
+                      key={inst.id}
+                      type="button"
+                      role="option"
+                      className="lp-result-item"
                       onClick={() => {
-                        if (onSelectInstitutionForComplaint) {
-                          onSelectInstitutionForComplaint(inst);
-                        }
+                        if (onSelectInstitutionForComplaint) onSelectInstitutionForComplaint(inst);
                         setActiveTab('file-complaint');
                       }}
                     >
-                      <div className="inst-meta">
-                        <strong className="inst-name">{inst.name}</strong>
-                        <span className="inst-sub">
-                          AICTE Permanent ID: <code className="mono">{inst.permanentId}</code> · {inst.city}, {inst.state}
+                      <div className="lp-result-left">
+                        <strong className="lp-result-name">{inst.name}</strong>
+                        <span className="lp-result-meta">
+                          <code>{inst.permanentId}</code> · {inst.city}, {inst.state}
                         </span>
                       </div>
-                      <div className="inst-action flex items-center gap-2">
-                        <span className="status-chip chip-info">{inst.complianceRating}</span>
-                        <button type="button" className="btn btn-outline btn-sm">
-                          File Grievance Against College <ArrowRight size={14} />
-                        </button>
+                      <div className="lp-result-right">
+                        <span className="lp-compliance-chip">{inst.complianceRating}</span>
+                        <Icon e="→" size={14} />
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}
+
+              <div className="lp-divider-or"><span>or track an existing case</span></div>
+
+              {/* Quick track */}
+              <div className="lp-quick-track">
+                <input
+                  type="text"
+                  className="lp-track-input"
+                  placeholder="Case ID: AICTE-2026-GRV-84920"
+                  value={trackQuery}
+                  onChange={(e) => setTrackQuery(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') setActiveTab('track'); }}
+                  aria-label="Enter case ID to track"
+                />
+                <button
+                  type="button"
+                  className="lp-track-btn"
+                  onClick={() => setActiveTab('track')}
+                >
+                  <Icon e="🔍" size={16} />
+                  <span>Track</span>
+                </button>
+              </div>
             </div>
           </div>
+        </div>
+      </section>
 
-          {/* Two Primary Front Door Action Cards */}
-          <div className="grid grid-cols-2 gap-6 hero-action-cards">
-            {/* Card 1: File a Complaint */}
-            <div className="action-card card-file flex flex-col justify-between">
-              <div>
-                <div className="card-badge-row flex items-center justify-between">
-                  <div className="icon-badge badge-orange">
-                    <FilePlus2 size={26} />
-                  </div>
-                  <span className="step-tag">1-Click Front Door</span>
+      {/* ── STATS STRIP ── */}
+      <div className="lp-stats-strip">
+        <div className="container lp-stats-inner">
+          {[
+            { value: '98.4%', label: 'Disposal Compliance' },
+            { value: '72 Hrs', label: 'Maximum SLA' },
+            { value: '12,000+', label: 'Institutions Covered' },
+            { value: '100%', label: 'OTP-Verified Closures' },
+          ].map((s) => (
+            <div key={s.label} className="lp-stat-item">
+              <span className="lp-stat-value">{s.value}</span>
+              <span className="lp-stat-label">{s.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── PORTAL GATEWAY CARDS ── */}
+      <section className="lp-portals-section" aria-labelledby="lp-portals-heading">
+        <div className="container">
+          <div className="lp-section-head">
+            <span className="lp-eyebrow">TWO DEDICATED GATEWAYS</span>
+            <h2 id="lp-portals-heading">Choose Your Portal</h2>
+            <p className="lp-section-lead">
+              Separate, purpose-built portals for complainants and authorised AICTE officers.
+            </p>
+          </div>
+
+          <div className="lp-portal-grid">
+            {/* Citizen Portal */}
+            <div className="lp-portal-card lp-portal-citizen">
+              <div className="lp-portal-top">
+                <div className="lp-portal-icon lp-portal-icon-blue">
+                  <Icon e="🎓" size={32} />
                 </div>
-                <h2 className="card-title">{t.fileCardTitle}</h2>
-                <p className="card-desc">{t.fileCardDesc}</p>
-                <ul className="card-features-list">
-                  <li>✓ Guided 5-Step autosaved lodging wizard</li>
-                  <li>✓ Cryptographic SHA-256 evidence proof vault</li>
-                  <li>✓ Optional 100% confidential & anonymous reporting</li>
-                </ul>
+                <div className="lp-portal-label lp-portal-label-blue">For Students, Parents & Faculty</div>
+              </div>
+              <h3 className="lp-portal-heading">Citizen Portal</h3>
+              <p className="lp-portal-desc">
+                Lodge grievances, track live stages, communicate with assigned officers, and authenticate resolution via Citizen OTP.
+              </p>
+              <ul className="lp-portal-features">
+                <li><Icon e="✅" size={15} /><span><strong>5-Step Guided Wizard</strong> — autosaved draft with institution lookup</span></li>
+                <li><Icon e="✅" size={15} /><span><strong>Cryptographic Evidence Vault</strong> — SHA-256 tamper-proof hashing</span></li>
+                <li><Icon e="✅" size={15} /><span><strong>Citizen OTP Gateway</strong> — college cannot close cases unilaterally</span></li>
+                <li><Icon e="✅" size={15} /><span><strong>Officer Direct Chat</strong> — real-time messaging with bureau officer</span></li>
+              </ul>
+              <div className="lp-portal-actions">
+                <button
+                  type="button"
+                  className="lp-btn-portal-primary"
+                  onClick={() => setActiveTab('citizen-login')}
+                >
+                  <span>Sign In / Register</span>
+                  <Icon e="→" size={16} />
+                </button>
+                <button
+                  type="button"
+                  className="lp-btn-portal-outline"
+                  onClick={() => setActiveTab('file-complaint')}
+                >
+                  File Without Login
+                </button>
+              </div>
+            </div>
+
+            {/* Administration Portal */}
+            <div className="lp-portal-card lp-portal-admin">
+              <div className="lp-portal-top">
+                <div className="lp-portal-icon lp-portal-icon-orange">
+                  <Icon e="🛡️" size={32} />
+                </div>
+                <div className="lp-portal-label lp-portal-label-orange">For AICTE Officials & Committees</div>
+              </div>
+              <h3 className="lp-portal-heading">Administration Portal</h3>
+              <p className="lp-portal-desc">
+                Central bureau grievance dossier, intelligent cross-bureau case linking, institutional notices, and 72h SLA radar.
+              </p>
+              <ul className="lp-portal-features">
+                <li><Icon e="✅" size={15} /><span><strong>Bureau Grievance Ledger</strong> — live cases across all AICTE cells</span></li>
+                <li><Icon e="✅" size={15} /><span><strong>Intelligent Case Linker</strong> — multi-case institutional clusters (SIH26264)</span></li>
+                <li><Icon e="✅" size={15} /><span><strong>Compliance Matrix</strong> — monitor colleges with repeat complaints</span></li>
+                <li><Icon e="✅" size={15} /><span><strong>72h SLA Radar</strong> — auto-escalation to State Ombudsman</span></li>
+              </ul>
+              <div className="lp-portal-actions">
+                <button
+                  type="button"
+                  className="lp-btn-portal-admin"
+                  onClick={() => setActiveTab('admin-login')}
+                >
+                  <Icon e="🔒" size={15} />
+                  <span>Officer Sign In</span>
+                  <Icon e="→" size={16} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── HOW IT WORKS ── */}
+      <section className="lp-how-section" aria-labelledby="lp-how-heading">
+        <div className="container">
+          <div className="lp-section-head">
+            <span className="lp-eyebrow">TRANSPARENT LIFECYCLE</span>
+            <h2 id="lp-how-heading">How Your Grievance is Resolved</h2>
+            <p className="lp-section-lead">A tamper-evident workflow ensuring every complaint receives an enforceable resolution.</p>
+          </div>
+
+          <div className="lp-steps-grid">
+            <div className="lp-step-card">
+              <div className="lp-step-num">01</div>
+              <div className="lp-step-icon-wrap lp-step-orange">
+                <Icon e="🔐" size={26} />
+              </div>
+              <h3 className="lp-step-title">Lodge & Cryptographically Verify</h3>
+              <p className="lp-step-desc">
+                Your grievance is registered with SHA-256 evidence digests and dispatched to the designated AICTE bureau with an immutable audit hash.
+              </p>
+            </div>
+
+            <div className="lp-step-connector" aria-hidden="true">
+              <Icon e="→" size={22} />
+            </div>
+
+            <div className="lp-step-card">
+              <div className="lp-step-num">02</div>
+              <div className="lp-step-icon-wrap lp-step-blue">
+                <Icon e="⏱️" size={26} />
+              </div>
+              <h3 className="lp-step-title">72h Monitored Investigation</h3>
+              <p className="lp-step-desc">
+                A statutory notice is served to the registrar. Assigned bureau officers coordinate hearings with live SLA countdown.
+              </p>
+            </div>
+
+            <div className="lp-step-connector" aria-hidden="true">
+              <Icon e="→" size={22} />
+            </div>
+
+            <div className="lp-step-card lp-step-card-highlight">
+              <div className="lp-step-num lp-step-num-green">03</div>
+              <div className="lp-step-icon-wrap lp-step-green">
+                <Icon e="🔑" size={26} />
+              </div>
+              <h3 className="lp-step-title">Mandatory Citizen OTP Closure</h3>
+              <p className="lp-step-desc">
+                The institution cannot close a case unilaterally. Only when you enter your 6-digit confirmation OTP is resolution finalised.
+              </p>
+              <div className="lp-step-highlight-badge">Unique Protection</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── CASE LINKER FEATURE HIGHLIGHT ── */}
+      <section className="lp-linker-section" aria-labelledby="lp-linker-heading">
+        <div className="container">
+          <div className="lp-linker-card">
+            <div className="lp-linker-left">
+              <span className="lp-linker-eyebrow">SIH26264 SIGNATURE INNOVATION</span>
+              <h2 id="lp-linker-heading" className="lp-linker-h2">
+                Intelligent Multi-Case<br />Institutional Linking
+              </h2>
+              <p className="lp-linker-desc">
+                Turning scattered individual grievances into coordinated, accountable administrative action. When multiple students file similar complaints against the same college, NIVARAN detects the pattern and escalates jointly.
+              </p>
+              <div className="lp-linker-phases">
+                <div className="lp-phase-item">
+                  <div className="lp-phase-dot lp-phase-dot-1"></div>
+                  <div>
+                    <strong>Automated Discovery</strong>
+                    <span>Extracts institution ID, category, and grievance vector to find overlaps</span>
+                  </div>
+                </div>
+                <div className="lp-phase-item">
+                  <div className="lp-phase-dot lp-phase-dot-2"></div>
+                  <div>
+                    <strong>Similarity Linking</strong>
+                    <span>Flags candidate dockets with correlation rationale (e.g. 94% fee refund match)</span>
+                  </div>
+                </div>
+                <div className="lp-phase-item">
+                  <div className="lp-phase-dot lp-phase-dot-3"></div>
+                  <div>
+                    <strong>Coordinated Inquiry</strong>
+                    <span>AICTE serves one unified statutory notice while preserving individual student IDs</span>
+                  </div>
+                </div>
               </div>
               <button
                 type="button"
-                className="btn btn-primary btn-block card-cta-btn"
+                className="lp-linker-btn"
+                onClick={() => setActiveTab('admin')}
+              >
+                Inspect Linker in Administration
+                <Icon e="↗️" size={15} />
+              </button>
+            </div>
+            <div className="lp-linker-right" aria-hidden="true">
+              <div className="lp-linker-visual">
+                <div className="lp-linker-node lp-linker-node-primary">
+                  <div className="lp-node-label">AICTE-2026-GRV-84920</div>
+                  <div className="lp-node-sub">Aarav Sharma · Fee Refund</div>
+                </div>
+                <div className="lp-linker-connect">
+                  <Icon e="🔗" size={20} />
+                  <span>94% match</span>
+                </div>
+                <div className="lp-linker-node lp-linker-node-secondary">
+                  <div className="lp-node-label">AICTE-2026-GRV-84931</div>
+                  <div className="lp-node-sub">Tanya Verma · Fee Refund</div>
+                </div>
+                <div className="lp-linker-inst">
+                  <Icon e="🏫" size={16} />
+                  <span>Delhi Technological University · Joint Inquiry</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── CATEGORIES ── */}
+      <section className="lp-categories-section" aria-labelledby="lp-categories-heading">
+        <div className="container">
+          <div className="lp-section-head">
+            <span className="lp-eyebrow">DEDICATED BUREAU DESKS</span>
+            <h2 id="lp-categories-heading">{t.categoriesTitle}</h2>
+            <p className="lp-section-lead">Select your grievance area for specialised triage and expedited disposal.</p>
+          </div>
+
+          <div className="lp-cat-grid">
+            {[
+              {
+                icon: <Icon e="💳" size={22} />,
+                title: t.catFees,
+                desc: 'Caution money non-refund, seat surrender deductions, excess library fees, unapproved bus fee hikes.',
+                badge: 'High Volume',
+                badgeType: 'blue',
+                urgent: false,
+              },
+              {
+                icon: <Icon e="🚨" size={22} />,
+                title: t.catRagging,
+                desc: 'Physical intimidation, hostel harassment, psychological bullying. Confidential reporting available.',
+                badge: '24h Mandatory FIR',
+                badgeType: 'red',
+                urgent: true,
+              },
+              {
+                icon: <Icon e="🎓" size={22} />,
+                title: t.catScholarship,
+                desc: 'Pragati (Girls), Saksham (Specially-Abled), PMSSS J&K/Ladakh stipend delay or verification freeze.',
+                badge: 'Direct Bureau',
+                badgeType: 'blue',
+                urgent: false,
+              },
+              {
+                icon: <Icon e="🛡️" size={22} />,
+                title: t.catHarassment,
+                desc: 'Forwarded to AICTE Central ICC Nodal Cell. Strict identity protection protocol.',
+                badge: 'Confidential',
+                badgeType: 'purple',
+                urgent: false,
+              },
+              {
+                icon: <Icon e="🔬" size={22} />,
+                title: t.catFaculty,
+                desc: 'Substandard laboratories, deficient faculty ratio, missing computer centres, textbook shortages.',
+                badge: 'Approval Review',
+                badgeType: 'blue',
+                urgent: false,
+              },
+              {
+                icon: <Icon e="📜" size={22} />,
+                title: t.catAdmission,
+                desc: 'Withholding of original degree or marksheets, unapproved curriculum changes, exam malpractice.',
+                badge: 'Academics',
+                badgeType: 'blue',
+                urgent: false,
+              },
+            ].map((cat) => (
+              <button
+                key={cat.title}
+                type="button"
+                className={`lp-cat-card ${cat.urgent ? 'lp-cat-urgent' : ''}`}
                 onClick={() => setActiveTab('file-complaint')}
+                aria-label={`File a grievance: ${cat.title}`}
               >
-                <span>{t.fileCardBtn}</span>
-                <ArrowRight size={18} />
-              </button>
-            </div>
-
-            {/* Card 2: Track Existing Case */}
-            <div className="action-card card-track flex flex-col justify-between">
-              <div>
-                <div className="card-badge-row flex items-center justify-between">
-                  <div className="icon-badge badge-blue">
-                    <SearchCheck size={26} />
+                <div className="lp-cat-top">
+                  <div className={`lp-cat-icon ${cat.urgent ? 'lp-cat-icon-red' : 'lp-cat-icon-blue'}`}>
+                    {cat.icon}
                   </div>
-                  <span className="step-tag tag-blue">Real-Time Stages</span>
+                  <span className={`lp-cat-badge lp-cat-badge-${cat.badgeType}`}>{cat.badge}</span>
                 </div>
-                <h2 className="card-title">{t.trackCardTitle}</h2>
-                <p className="card-desc">{t.trackCardDesc}</p>
-                <ul className="card-features-list">
-                  <li>✓ 6-Stage visual progress timeline</li>
-                  <li>✓ 72-Hour live SLA countdown timer</li>
-                  <li>✓ <strong>Citizen OTP Gateway:</strong> Confirm resolution satisfaction</li>
-                </ul>
-              </div>
-              <button
-                type="button"
-                className="btn btn-secondary btn-block card-cta-btn"
-                onClick={() => setActiveTab('track')}
-              >
-                <span>{t.trackCardBtn}</span>
-                <ArrowRight size={18} />
+                <h4 className="lp-cat-title">{cat.title}</h4>
+                <p className="lp-cat-desc">{cat.desc}</p>
+                <span className="lp-cat-link">
+                  {cat.urgent ? 'Emergency Filing' : 'File in this desk'} <Icon e="›" size={14} />
+                </span>
               </button>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* 3-Step Process Explainer */}
-      <section className="explainer-section">
-        <div className="container">
-          <div className="section-head text-center">
-            <span className="section-eyebrow">TRANSPARENT LIFECYCLE</span>
-            <h2>How Your Grievance is Handled & Resolved</h2>
-            <p className="section-lead">A tamper-evident workflow ensuring every complaint receives an enforceable resolution.</p>
+      {/* ── HELPLINES ── */}
+      <section className="lp-helplines-section" aria-labelledby="lp-helplines-heading">
+        <div className="container lp-helplines-inner">
+          <div className="lp-helplines-left">
+            <div className="lp-helpline-icon-wrap">
+              <Icon e="📞" size={22} />
+            </div>
+            <div>
+              <h2 id="lp-helplines-heading" className="lp-helplines-h2">
+                National 24×7 Emergency Helplines
+              </h2>
+              <p className="lp-helplines-sub">
+                Immediate intervention for ragging, harassment, or safety emergencies.
+              </p>
+            </div>
           </div>
-
-          <div className="grid grid-cols-3 gap-6 explainer-cards">
-            <div className="card step-card">
-              <div className="step-num">01</div>
-              <div className="step-icon-wrap">
-                <ShieldCheck size={28} className="text-orange" />
-              </div>
-              <h3>{t.step1Title}</h3>
-              <p>{t.step1Desc}</p>
-            </div>
-
-            <div className="card step-card">
-              <div className="step-num">02</div>
-              <div className="step-icon-wrap">
-                <Clock size={28} className="text-blue" />
-              </div>
-              <h3>{t.step2Title}</h3>
-              <p>{t.step2Desc}</p>
-            </div>
-
-            <div className="card step-card highlight-step">
-              <div className="step-num highlight-num">03</div>
-              <div className="step-icon-wrap">
-                <KeyRound size={28} className="text-green" />
-              </div>
-              <h3>{t.step3Title}</h3>
-              <p>{t.step3Desc}</p>
-            </div>
+          <div className="lp-helplines-right">
+            <a href="tel:18001805522" className="lp-hl-pill lp-hl-red">
+              <Icon e="📞" size={14} />
+              <span>Anti-Ragging</span>
+              <strong>1800-180-5522</strong>
+            </a>
+            <a href="tel:1091" className="lp-hl-pill lp-hl-pink">
+              <Icon e="📞" size={14} />
+              <span>Women Safety</span>
+              <strong>1091</strong>
+            </a>
+            <a href="tel:14416" className="lp-hl-pill lp-hl-blue">
+              <Icon e="📞" size={14} />
+              <span>Tele-MANAS</span>
+              <strong>14416</strong>
+            </a>
           </div>
         </div>
       </section>
 
-      {/* Redressal Category Desks */}
-      <section className="categories-section">
-        <div className="container">
-          <div className="section-head text-center">
-            <span className="section-eyebrow">DEDICATED BUREAU DESKS</span>
-            <h2>{t.categoriesTitle}</h2>
-            <p className="section-lead">Select your grievance area for specialized triage and expedited disposal.</p>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4 category-cards-grid">
-            <div 
-              className="card cat-card flex flex-col justify-between"
-              onClick={() => setActiveTab('file-complaint')}
-            >
-              <div>
-                <div className="cat-icon-row flex items-center justify-between">
-                  <CreditCard size={24} className="cat-icon-style icon-fees" />
-                  <span className="cat-badge">High Volume</span>
-                </div>
-                <h4>{t.catFees}</h4>
-                <p className="cat-desc">Caution money non-refund, seat surrender deductions, excess library fees, unapproved bus fee hikes.</p>
-              </div>
-              <span className="cat-action-link">File in this desk →</span>
-            </div>
-
-            <div 
-              className="card cat-card cat-urgent flex flex-col justify-between"
-              onClick={() => setActiveTab('file-complaint')}
-            >
-              <div>
-                <div className="cat-icon-row flex items-center justify-between">
-                  <AlertTriangle size={24} className="cat-icon-style icon-ragging" />
-                  <span className="cat-badge badge-urgent">24h Mandatory FIR</span>
-                </div>
-                <h4>{t.catRagging}</h4>
-                <p className="cat-desc">Physical intimidation, hostel harassment, psychological bullying. 100% confidential reporting available.</p>
-              </div>
-              <span className="cat-action-link link-urgent">Instant Emergency Filing →</span>
-            </div>
-
-            <div 
-              className="card cat-card flex flex-col justify-between"
-              onClick={() => setActiveTab('file-complaint')}
-            >
-              <div>
-                <div className="cat-icon-row flex items-center justify-between">
-                  <GraduationCap size={24} className="cat-icon-style icon-scholarship" />
-                  <span className="cat-badge">Direct Bureau</span>
-                </div>
-                <h4>{t.catScholarship}</h4>
-                <p className="cat-desc">Pragati (Girls in Tech), Saksham (Specially-Abled), PMSSS J&K/Ladakh stipend delay or college verification freeze.</p>
-              </div>
-              <span className="cat-action-link">File in this desk →</span>
-            </div>
-
-            <div 
-              className="card cat-card flex flex-col justify-between"
-              onClick={() => setActiveTab('file-complaint')}
-            >
-              <div>
-                <div className="cat-icon-row flex items-center justify-between">
-                  <Users size={24} className="cat-icon-style icon-icc" />
-                  <span className="cat-badge">Confidential</span>
-                </div>
-                <h4>{t.catHarassment}</h4>
-                <p className="cat-desc">Complaints forwarded straight to AICTE Central ICC Nodal Cell. Strict identity protection protocol.</p>
-              </div>
-              <span className="cat-action-link">File in this desk →</span>
-            </div>
-
-            <div 
-              className="card cat-card flex flex-col justify-between"
-              onClick={() => setActiveTab('file-complaint')}
-            >
-              <div>
-                <div className="cat-icon-row flex items-center justify-between">
-                  <Wrench size={24} className="cat-icon-style icon-infra" />
-                  <span className="cat-badge">Approval Review</span>
-                </div>
-                <h4>{t.catFaculty}</h4>
-                <p className="cat-desc">Substandard laboratories, deficient faculty ratio, missing computer centers, library textbook shortages.</p>
-              </div>
-              <span className="cat-action-link">File in this desk →</span>
-            </div>
-
-            <div 
-              className="card cat-card flex flex-col justify-between"
-              onClick={() => setActiveTab('file-complaint')}
-            >
-              <div>
-                <div className="cat-icon-row flex items-center justify-between">
-                  <FileText size={24} className="cat-icon-style icon-admission" />
-                  <span className="cat-badge">Academics</span>
-                </div>
-                <h4>{t.catAdmission}</h4>
-                <p className="cat-desc">Withholding of original degree or marksheets, unapproved curriculum changes, examination schedule malpractice.</p>
-              </div>
-              <span className="cat-action-link">File in this desk →</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* National Portal Statistics Strip */}
-      <section className="stats-section">
-        <div className="container">
-          <div className="grid grid-cols-4 gap-4 stats-grid">
-            <div className="stat-card">
-              <span className="stat-number">{t.statResolved}</span>
-              <span className="stat-label">{t.statResolvedLabel}</span>
-            </div>
-            <div className="stat-card">
-              <span className="stat-number">{t.statSla}</span>
-              <span className="stat-label">{t.statSlaLabel}</span>
-            </div>
-            <div className="stat-card">
-              <span className="stat-number">{t.statInstitutes}</span>
-              <span className="stat-label">{t.statInstitutesLabel}</span>
-            </div>
-            <div className="stat-card">
-              <span className="stat-number">{t.statSatisfaction}</span>
-              <span className="stat-label">{t.statSatisfactionLabel}</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
+      {/* ─────────── STYLES ─────────── */}
       <style>{`
-        .notice-ticker {
+        /* ── ROOT ── */
+        .lp-root {
+          background-color: var(--color-neutral-100);
+        }
+
+        /* ── TICKER ── */
+        .lp-ticker {
           background-color: #FEF3C7;
           border-bottom: 1px solid #FDE68A;
-          padding: 8px 0;
-          font-size: 0.825rem;
+          padding: 7px 0;
         }
-        .ticker-badge {
+        .lp-ticker-inner {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+        .lp-ticker-badge {
           background-color: var(--color-action-600);
-          color: #FFFFFF;
-          font-weight: 700;
-          font-size: 0.7rem;
-          padding: 2px 6px;
+          color: #fff;
+          font-size: 0.68rem;
+          font-weight: 800;
+          padding: 2px 8px;
           border-radius: var(--radius-sm);
           white-space: nowrap;
+          letter-spacing: 0.5px;
         }
-        .ticker-content {
+        .lp-ticker-text {
+          flex: 1;
+          font-size: 0.8125rem;
+          color: #78350F;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
-          color: #78350F;
-          flex: 1;
         }
-        .ticker-link {
-          font-weight: 600;
+        .lp-ticker-link {
+          background: none;
+          border: none;
+          font-size: 0.8125rem;
+          font-weight: 700;
           color: var(--color-action-600);
-          text-decoration: underline;
+          cursor: pointer;
           white-space: nowrap;
+          display: inline-flex;
+          align-items: center;
+          gap: 2px;
+          text-decoration: underline;
         }
 
-        .hero-section {
-          background: linear-gradient(180deg, #FFFFFF 0%, #F3F5F8 100%);
-          padding: 48px 0 36px 0;
-          border-bottom: 1px solid var(--color-neutral-300);
+        /* ── HERO ── */
+        .lp-hero {
+          background: #fff;
+          border-bottom: 1px solid var(--color-neutral-200);
+          padding: 56px 0 48px;
         }
-        .hero-content {
-          max-width: 860px;
-          margin: 0 auto 36px auto;
-          text-align: center;
+        .lp-hero-inner {
+          display: grid;
+          grid-template-columns: 1fr 420px;
+          gap: 48px;
+          align-items: center;
         }
-        .hero-logo-lockup {
-          margin-bottom: 16px;
+        .lp-hero-brand {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          margin-bottom: 18px;
         }
-        .hero-emblem-img {
-          height: 84px;
-          width: auto;
+        .lp-hero-logo {
+          height: 72px;
+          width: 72px;
           object-fit: contain;
-          filter: drop-shadow(0 4px 12px rgba(11, 42, 91, 0.22));
-          transition: transform 0.25s ease;
+          filter: drop-shadow(0 4px 12px rgba(11,42,91,0.18));
         }
-        .hero-emblem-img:hover {
-          transform: scale(1.05) rotate(3deg);
-        }
-        .hero-brand-meta {
+        .lp-hero-brand-text {
           display: flex;
           flex-direction: column;
         }
-        .hero-brand-name {
-          font-size: 1.6rem;
-          font-weight: 800;
+        .lp-hero-brand-name {
+          font-size: 1.5rem;
+          font-weight: 900;
           color: var(--color-navy-900);
           letter-spacing: -0.5px;
-          line-height: 1.1;
+          line-height: 1;
         }
-        .hero-brand-motto {
-          font-size: 0.85rem;
+        .lp-hero-brand-sub {
+          font-size: 0.78rem;
           color: var(--color-action-600);
           font-weight: 700;
+          margin-top: 3px;
         }
-        .hero-pill-tag {
-          display: inline-flex;
-          align-items: center;
-          padding: 4px 12px;
-          background: #EFF6FF;
-          border: 1px solid #BFDBFE;
-          border-radius: var(--radius-pill);
-          color: var(--color-brand-blue-600);
-          font-size: 0.8125rem;
-          font-weight: 600;
-          margin-bottom: 16px;
-        }
-        .hero-heading {
-          font-size: 2.25rem;
-          font-weight: 800;
-          color: var(--color-navy-900);
-          letter-spacing: -0.5px;
-          margin-bottom: 12px;
-        }
-        .hero-desc {
-          font-size: 1.1rem;
-          color: var(--color-neutral-600);
-          margin-bottom: 24px;
-        }
-
-        .institution-search-box {
-          position: relative;
-          max-width: 760px;
-          margin: 0 auto;
-        }
-        .search-bar-inner {
-          display: flex;
-          align-items: center;
-          background: #FFFFFF;
-          border: 2px solid var(--color-brand-blue-600);
-          border-radius: var(--radius-pill);
-          padding: 6px 8px 6px 18px;
-          box-shadow: 0 4px 20px rgba(31, 95, 191, 0.12);
-        }
-        .search-icon {
-          color: var(--color-brand-blue-600);
-          margin-right: 10px;
-          flex-shrink: 0;
-        }
-        .search-input {
-          flex: 1;
-          border: none;
-          outline: none;
-          font-size: 0.95rem;
-          font-family: var(--font-sans);
-          color: var(--color-neutral-900);
-          min-width: 120px;
-        }
-        .voice-btn {
-          background: #F1F5F9;
-          border: 1px solid #CBD5E1;
-          color: var(--color-neutral-700);
-          padding: 8px 12px;
-          border-radius: var(--radius-pill);
-          cursor: pointer;
+        .lp-sih-pill {
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          font-size: 0.8125rem;
-          font-weight: 600;
-          margin-right: 6px;
-          transition: all 0.15s ease;
-        }
-        .voice-btn:hover {
-          background-color: #E2E8F0;
-        }
-        .voice-btn.listening {
-          background-color: #FEE2E2;
-          color: #B91C1C;
-          border-color: #F87171;
-          animation: pulseVoice 1s infinite alternate;
-        }
-        @keyframes pulseVoice {
-          from { transform: scale(1); }
-          to { transform: scale(1.05); }
-        }
-        .search-action-btn {
+          background: #EFF6FF;
+          border: 1px solid #BFDBFE;
+          color: var(--color-brand-blue-600);
+          font-size: 0.78rem;
+          font-weight: 700;
+          padding: 4px 12px;
           border-radius: var(--radius-pill);
-          padding: 10px 22px;
+          margin-bottom: 20px;
         }
+        .lp-hero-h1 {
+          font-size: 2.6rem;
+          font-weight: 900;
+          color: var(--color-navy-900);
+          line-height: 1.15;
+          margin: 0 0 16px;
+        }
+        .lp-hero-accent {
+          color: var(--color-action-600);
+        }
+        .lp-hero-desc {
+          font-size: 1.05rem;
+          color: var(--color-neutral-600);
+          line-height: 1.6;
+          max-width: 560px;
+          margin-bottom: 28px;
+        }
+        .lp-hero-ctas {
+          display: flex;
+          gap: 12px;
+          flex-wrap: wrap;
+          margin-bottom: 24px;
+        }
+        .lp-btn-primary {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          background-color: var(--color-action-600);
+          color: #fff;
+          border: none;
+          border-radius: var(--radius-md);
+          padding: 12px 24px;
+          font-size: 0.95rem;
+          font-weight: 700;
+          cursor: pointer;
+          min-height: 44px;
+          transition: background-color 0.15s ease;
+          font-family: var(--font-sans);
+        }
+        .lp-btn-primary:hover { background-color: var(--color-action-700); }
+        .lp-btn-secondary {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          background-color: transparent;
+          color: var(--color-navy-900);
+          border: 2px solid var(--color-neutral-300);
+          border-radius: var(--radius-md);
+          padding: 12px 24px;
+          font-size: 0.95rem;
+          font-weight: 700;
+          cursor: pointer;
+          min-height: 44px;
+          transition: border-color 0.15s ease;
+          font-family: var(--font-sans);
+        }
+        .lp-btn-secondary:hover { border-color: var(--color-navy-900); }
+        .lp-trust-row {
+          display: flex;
+          align-items: center;
+          gap: 20px;
+          flex-wrap: wrap;
+        }
+        .lp-trust-item {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 0.78rem;
+          color: var(--color-neutral-600);
+          font-weight: 600;
+        }
+        .lp-trust-item svg { color: var(--color-action-600); }
 
-        .search-dropdown-results {
-          position: absolute;
-          top: calc(100% + 8px);
-          left: 0;
-          right: 0;
-          background: #FFFFFF;
+        /* Hero right card */
+        .lp-search-card {
+          background: #fff;
+          border: 1px solid var(--color-neutral-300);
+          border-radius: var(--radius-lg);
+          padding: 24px;
+          box-shadow: var(--shadow-soft);
+        }
+        .lp-search-card-head {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          margin-bottom: 18px;
+          color: var(--color-navy-900);
+        }
+        .lp-search-card-head svg { color: var(--color-brand-blue-600); flex-shrink: 0; margin-top: 2px; }
+        .lp-search-card-head strong { display: block; font-size: 0.95rem; color: var(--color-navy-900); }
+        .lp-search-card-head span { font-size: 0.8rem; color: var(--color-neutral-600); }
+        .lp-search-bar {
+          display: flex;
+          align-items: center;
+          border: 2px solid var(--color-brand-blue-600);
+          border-radius: var(--radius-md);
+          padding: 6px 6px 6px 12px;
+          gap: 6px;
+          background: #fff;
+          position: relative;
+        }
+        .lp-search-icon { color: var(--color-neutral-400); flex-shrink: 0; }
+        .lp-search-input {
+          flex: 1;
+          border: none;
+          outline: none;
+          font-size: 0.9rem;
+          background: transparent;
+          min-width: 0;
+          font-family: var(--font-sans);
+        }
+        .lp-voice-btn {
+          background: none;
+          border: none;
+          color: var(--color-neutral-600);
+          cursor: pointer;
+          padding: 6px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          transition: background-color 0.15s ease;
+        }
+        .lp-voice-btn:hover { background-color: var(--color-neutral-100); }
+        .lp-voice-btn.listening { color: #DC2626; animation: lp-pulse-red 1s infinite; }
+        @keyframes lp-pulse-red { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+        .lp-search-go {
+          background-color: var(--color-brand-blue-600);
+          color: #fff;
+          border: none;
+          border-radius: var(--radius-sm);
+          padding: 8px 16px;
+          font-size: 0.85rem;
+          font-weight: 700;
+          cursor: pointer;
+          white-space: nowrap;
+          min-height: 36px;
+          font-family: var(--font-sans);
+        }
+        .lp-search-go:hover { background-color: #1A4FA8; }
+        .lp-search-dropdown {
+          background: #fff;
           border: 1px solid var(--color-neutral-300);
           border-radius: var(--radius-md);
           box-shadow: var(--shadow-modal);
-          z-index: 50;
-          text-align: left;
-          max-height: 380px;
+          margin-top: 6px;
+          overflow: hidden;
+          max-height: 260px;
           overflow-y: auto;
         }
-        .dropdown-header {
-          padding: 10px 16px;
+        .lp-dropdown-hdr {
+          padding: 8px 14px;
           background: var(--color-neutral-100);
-          font-size: 0.8rem;
+          font-size: 0.75rem;
           font-weight: 700;
           color: var(--color-neutral-600);
           border-bottom: 1px solid var(--color-neutral-200);
         }
-        .result-item {
-          padding: 12px 16px;
+        .lp-result-item {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+          padding: 10px 14px;
+          background: #fff;
+          border: none;
           border-bottom: 1px solid var(--color-neutral-200);
           cursor: pointer;
-          transition: background 0.1s ease;
+          text-align: left;
+          transition: background-color 0.15s ease;
+          font-family: var(--font-sans);
         }
-        .result-item:hover {
-          background-color: var(--color-brand-blue-100);
+        .lp-result-item:hover { background-color: var(--color-brand-blue-100); }
+        .lp-result-left { flex: 1; min-width: 0; }
+        .lp-result-name { display: block; font-size: 0.875rem; font-weight: 700; color: var(--color-navy-900); }
+        .lp-result-meta { font-size: 0.75rem; color: var(--color-neutral-600); margin-top: 2px; display: block; }
+        .lp-result-meta code { font-family: var(--font-mono); background: var(--color-neutral-100); padding: 0 3px; border-radius: 2px; }
+        .lp-result-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; color: var(--color-neutral-600); }
+        .lp-compliance-chip {
+          font-size: 0.7rem;
+          font-weight: 700;
+          padding: 2px 7px;
+          border-radius: var(--radius-pill);
+          background: #DCFCE7;
+          color: #166534;
         }
-        .inst-name {
-          font-size: 0.95rem;
+        .lp-divider-or {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin: 18px 0 14px;
+          color: var(--color-neutral-400);
+          font-size: 0.8rem;
+        }
+        .lp-divider-or::before,.lp-divider-or::after {
+          content:'';
+          flex:1;
+          height:1px;
+          background: var(--color-neutral-200);
+        }
+        .lp-quick-track {
+          display: flex;
+          gap: 8px;
+        }
+        .lp-track-input {
+          flex: 1;
+          border: 1px solid var(--color-neutral-300);
+          border-radius: var(--radius-md);
+          padding: 9px 12px;
+          font-size: 0.85rem;
+          font-family: var(--font-mono);
+          outline: none;
+          background: #fff;
           color: var(--color-navy-900);
-          display: block;
+          min-width: 0;
         }
-        .inst-sub {
-          font-size: 0.8rem;
-          color: var(--color-neutral-600);
+        .lp-track-input:focus { border-color: var(--color-brand-blue-600); }
+        .lp-track-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background-color: var(--color-navy-900);
+          color: #fff;
+          border: none;
+          border-radius: var(--radius-md);
+          padding: 9px 16px;
+          font-size: 0.85rem;
+          font-weight: 700;
+          cursor: pointer;
+          white-space: nowrap;
+          font-family: var(--font-sans);
         }
-        .btn-sm {
-          min-height: 32px;
-          padding: 4px 10px;
+        .lp-track-btn:hover { background-color: #0E3673; }
+
+        /* ── STATS STRIP ── */
+        .lp-stats-strip {
+          background: var(--color-navy-900);
+          padding: 28px 0;
+          border-bottom: 3px solid var(--color-brand-orange-500);
+        }
+        .lp-stats-inner {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 0;
+        }
+        .lp-stat-item {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+          padding: 0 24px;
+          border-right: 1px solid rgba(255,255,255,0.1);
+        }
+        .lp-stat-item:last-child { border-right: none; }
+        .lp-stat-value {
+          font-size: 2rem;
+          font-weight: 900;
+          color: var(--color-brand-orange-500);
+          font-family: var(--font-mono);
+          line-height: 1;
+          margin-bottom: 6px;
+        }
+        .lp-stat-label {
           font-size: 0.8rem;
+          color: #94A3B8;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
 
-        .hero-action-cards {
-          margin-top: 16px;
+        /* ── PORTAL GATEWAY ── */
+        .lp-portals-section {
+          padding: 72px 0;
+          background: var(--color-neutral-100);
         }
-        .action-card {
-          background: #FFFFFF;
-          border: 2px solid var(--color-neutral-300);
+        .lp-section-head {
+          text-align: center;
+          margin-bottom: 48px;
+        }
+        .lp-eyebrow {
+          display: inline-block;
+          font-size: 0.72rem;
+          font-weight: 800;
+          letter-spacing: 1.5px;
+          color: var(--color-action-600);
+          text-transform: uppercase;
+          margin-bottom: 10px;
+        }
+        .lp-section-head h2 {
+          font-size: 1.9rem;
+          font-weight: 800;
+          color: var(--color-navy-900);
+          margin: 0 0 12px;
+        }
+        .lp-section-lead {
+          font-size: 1rem;
+          color: var(--color-neutral-600);
+          max-width: 540px;
+          margin: 0 auto;
+          line-height: 1.55;
+        }
+        .lp-portal-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 28px;
+        }
+        .lp-portal-card {
+          background: #fff;
           border-radius: var(--radius-lg);
-          padding: 28px;
-          box-shadow: var(--shadow-soft);
-          transition: transform 0.15s ease, border-color 0.15s ease;
+          padding: 32px;
+          border: 1px solid var(--color-neutral-200);
+          box-shadow: var(--shadow-sm);
+          display: flex;
+          flex-direction: column;
+          transition: box-shadow 0.2s ease;
         }
-        .action-card:hover {
-          border-color: var(--color-brand-blue-600);
-          transform: translateY(-2px);
+        .lp-portal-card:hover { box-shadow: var(--shadow-soft); }
+        .lp-portal-citizen { border-top: 4px solid var(--color-brand-blue-600); }
+        .lp-portal-admin   { border-top: 4px solid var(--color-action-600); }
+        .lp-portal-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 20px;
         }
-        .card-file {
-          border-top: 5px solid var(--color-action-600);
+        .lp-portal-icon {
+          width: 56px;
+          height: 56px;
+          border-radius: var(--radius-md);
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
-        .card-track {
-          border-top: 5px solid var(--color-brand-blue-600);
+        .lp-portal-icon-blue { background: #EFF6FF; color: var(--color-brand-blue-600); }
+        .lp-portal-icon-orange { background: #FFF7ED; color: var(--color-action-600); }
+        .lp-portal-label {
+          font-size: 0.75rem;
+          font-weight: 700;
+          padding: 4px 10px;
+          border-radius: var(--radius-pill);
         }
-        .icon-badge {
+        .lp-portal-label-blue { background: #EFF6FF; color: var(--color-brand-blue-600); }
+        .lp-portal-label-orange { background: #FFF7ED; color: var(--color-action-600); }
+        .lp-portal-heading {
+          font-size: 1.4rem;
+          font-weight: 800;
+          color: var(--color-navy-900);
+          margin: 0 0 10px;
+        }
+        .lp-portal-desc {
+          font-size: 0.9rem;
+          color: var(--color-neutral-600);
+          line-height: 1.55;
+          margin-bottom: 22px;
+        }
+        .lp-portal-features {
+          list-style: none;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          margin-bottom: 28px;
+          flex: 1;
+        }
+        .lp-portal-features li {
+          display: flex;
+          align-items: flex-start;
+          gap: 9px;
+          font-size: 0.875rem;
+          color: var(--color-neutral-700);
+        }
+        .lp-portal-features li svg {
+          color: var(--color-action-600);
+          flex-shrink: 0;
+          margin-top: 2px;
+        }
+        .lp-portal-actions {
+          display: flex;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+        .lp-btn-portal-primary {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          background-color: var(--color-brand-blue-600);
+          color: #fff;
+          border: none;
+          border-radius: var(--radius-md);
+          padding: 11px 22px;
+          font-size: 0.9rem;
+          font-weight: 700;
+          cursor: pointer;
+          min-height: 44px;
+          transition: background-color 0.15s ease;
+          font-family: var(--font-sans);
+          flex: 1;
+        }
+        .lp-btn-portal-primary:hover { background-color: #1A4FA8; }
+        .lp-btn-portal-outline {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          background-color: transparent;
+          color: var(--color-navy-900);
+          border: 1px solid var(--color-neutral-300);
+          border-radius: var(--radius-md);
+          padding: 11px 18px;
+          font-size: 0.875rem;
+          font-weight: 600;
+          cursor: pointer;
+          min-height: 44px;
+          transition: border-color 0.15s ease;
+          font-family: var(--font-sans);
+          white-space: nowrap;
+        }
+        .lp-btn-portal-outline:hover { border-color: var(--color-navy-900); }
+        .lp-btn-portal-admin {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          background-color: var(--color-action-600);
+          color: #fff;
+          border: none;
+          border-radius: var(--radius-md);
+          padding: 11px 22px;
+          font-size: 0.9rem;
+          font-weight: 700;
+          cursor: pointer;
+          min-height: 44px;
+          transition: background-color 0.15s ease;
+          font-family: var(--font-sans);
+          flex: 1;
+        }
+        .lp-btn-portal-admin:hover { background-color: var(--color-action-700); }
+
+        /* ── HOW IT WORKS ── */
+        .lp-how-section {
+          padding: 72px 0;
+          background: #fff;
+          border-top: 1px solid var(--color-neutral-200);
+          border-bottom: 1px solid var(--color-neutral-200);
+        }
+        .lp-steps-grid {
+          display: flex;
+          align-items: stretch;
+          gap: 0;
+        }
+        .lp-step-card {
+          flex: 1;
+          background: var(--color-neutral-100);
+          border-radius: var(--radius-lg);
+          padding: 28px 24px;
+          border: 1px solid var(--color-neutral-200);
+          position: relative;
+        }
+        .lp-step-card-highlight {
+          background: #F0FDF4;
+          border-color: #86EFAC;
+        }
+        .lp-step-num {
+          font-size: 2.5rem;
+          font-weight: 900;
+          color: var(--color-neutral-200);
+          font-family: var(--font-mono);
+          line-height: 1;
+          margin-bottom: 16px;
+        }
+        .lp-step-num-green { color: #BBF7D0; }
+        .lp-step-icon-wrap {
           width: 52px;
           height: 52px;
           border-radius: var(--radius-md);
@@ -628,212 +1158,326 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           justify-content: center;
           margin-bottom: 16px;
         }
-        .badge-orange {
-          background-color: #FFF7ED;
-          color: var(--color-action-600);
-          border: 1px solid #FFEDD5;
-        }
-        .badge-blue {
-          background-color: #EFF6FF;
-          color: var(--color-brand-blue-600);
-          border: 1px solid #DBEAFE;
-        }
-        .step-tag {
-          font-size: 0.75rem;
+        .lp-step-orange { background: #FFF7ED; color: var(--color-action-600); }
+        .lp-step-blue   { background: #EFF6FF; color: var(--color-brand-blue-600); }
+        .lp-step-green  { background: #DCFCE7; color: #16A34A; }
+        .lp-step-title {
+          font-size: 1.05rem;
           font-weight: 700;
-          color: var(--color-action-600);
-          background: #FFF7ED;
-          padding: 4px 8px;
+          color: var(--color-navy-900);
+          margin: 0 0 10px;
+        }
+        .lp-step-desc {
+          font-size: 0.875rem;
+          color: var(--color-neutral-600);
+          line-height: 1.55;
+        }
+        .lp-step-highlight-badge {
+          display: inline-block;
+          margin-top: 14px;
+          background: #DCFCE7;
+          color: #166534;
+          font-size: 0.72rem;
+          font-weight: 800;
+          padding: 3px 10px;
           border-radius: var(--radius-pill);
         }
-        .tag-blue {
-          color: var(--color-brand-blue-600);
-          background: #EFF6FF;
-        }
-        .card-title {
-          font-size: 1.4rem;
-          font-weight: 700;
-          margin-bottom: 8px;
-        }
-        .card-desc {
-          font-size: 0.95rem;
-          color: var(--color-neutral-600);
-          margin-bottom: 16px;
-        }
-        .card-features-list {
-          list-style: none;
-          margin-bottom: 24px;
-        }
-        .card-features-list li {
-          font-size: 0.875rem;
-          color: var(--color-neutral-700);
-          margin-bottom: 6px;
-        }
-        .card-cta-btn {
-          width: 100%;
-          font-size: 1rem;
-          font-weight: 700;
-        }
-
-        .explainer-section {
-          padding: 56px 0;
-          background: #FFFFFF;
-          border-bottom: 1px solid var(--color-neutral-300);
-        }
-        .section-head {
-          margin-bottom: 40px;
-        }
-        .section-eyebrow {
-          font-size: 0.78rem;
-          font-weight: 800;
-          letter-spacing: 1px;
-          color: var(--color-action-600);
-          display: block;
-          margin-bottom: 6px;
-        }
-        .section-lead {
-          font-size: 1.05rem;
-          color: var(--color-neutral-600);
-          margin-top: 6px;
-        }
-        .step-card {
-          position: relative;
-          padding: 32px 24px;
-          background: var(--color-neutral-100);
-          border: 1px solid var(--color-neutral-300);
-          border-radius: var(--radius-md);
-        }
-        .step-num {
-          font-size: 2.2rem;
-          font-weight: 900;
+        .lp-step-connector {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0 16px;
           color: var(--color-neutral-300);
-          position: absolute;
-          top: 16px;
-          right: 20px;
-          font-family: var(--font-mono);
+          flex-shrink: 0;
         }
-        .step-icon-wrap {
-          margin-bottom: 16px;
-        }
-        .step-card h3 {
-          font-size: 1.15rem;
-          font-weight: 700;
-          margin-bottom: 8px;
-        }
-        .step-card p {
-          font-size: 0.9rem;
-          color: var(--color-neutral-600);
-        }
-        .highlight-step {
-          background: #F0FDF4;
-          border-color: #86EFAC;
-        }
-        .highlight-num {
-          color: #BBF7D0;
-        }
-        .text-orange { color: var(--color-action-600); }
-        .text-blue { color: var(--color-brand-blue-600); }
-        .text-green { color: #16A34A; }
 
-        .categories-section {
-          padding: 56px 0;
+        /* ── LINKER ── */
+        .lp-linker-section {
+          padding: 72px 0;
           background: var(--color-neutral-100);
         }
-        .cat-card {
-          cursor: pointer;
-          transition: transform 0.15s ease, border-color 0.15s ease;
-          background: #FFFFFF;
-          border: 1px solid var(--color-neutral-300);
+        .lp-linker-card {
+          background: var(--color-navy-900);
+          border-radius: var(--radius-lg);
+          padding: 48px;
+          display: grid;
+          grid-template-columns: 1fr 340px;
+          gap: 48px;
+          align-items: center;
         }
-        .cat-card:hover {
-          border-color: var(--color-brand-blue-600);
-          transform: translateY(-2px);
-        }
-        .cat-urgent {
-          border-left: 4px solid var(--color-danger-text);
-          background: #FFFDFD;
-        }
-        .cat-icon-row {
+        .lp-linker-eyebrow {
+          display: block;
+          font-size: 0.72rem;
+          font-weight: 800;
+          letter-spacing: 1.5px;
+          color: var(--color-brand-orange-500);
+          text-transform: uppercase;
           margin-bottom: 12px;
         }
-        .cat-badge {
-          font-size: 0.72rem;
+        .lp-linker-h2 {
+          font-size: 1.8rem;
+          font-weight: 900;
+          color: #FFFFFF;
+          line-height: 1.2;
+          margin: 0 0 16px;
+        }
+        .lp-linker-desc {
+          font-size: 0.9rem;
+          color: #94A3B8;
+          line-height: 1.6;
+          margin-bottom: 28px;
+        }
+        .lp-linker-phases {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          margin-bottom: 28px;
+        }
+        .lp-phase-item {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+        }
+        .lp-phase-dot {
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          flex-shrink: 0;
+          margin-top: 5px;
+        }
+        .lp-phase-dot-1 { background: var(--color-brand-orange-500); }
+        .lp-phase-dot-2 { background: #60A5FA; }
+        .lp-phase-dot-3 { background: #34D399; }
+        .lp-phase-item strong { display: block; font-size: 0.875rem; color: #E2E8F0; margin-bottom: 2px; }
+        .lp-phase-item span { font-size: 0.8rem; color: #94A3B8; }
+        .lp-linker-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          background: transparent;
+          color: var(--color-brand-orange-500);
+          border: 1px solid var(--color-brand-orange-500);
+          border-radius: var(--radius-md);
+          padding: 10px 20px;
+          font-size: 0.875rem;
           font-weight: 700;
-          padding: 2px 8px;
+          cursor: pointer;
+          transition: background-color 0.15s ease;
+          font-family: var(--font-sans);
+        }
+        .lp-linker-btn:hover { background-color: rgba(242,137,94,0.1); }
+        .lp-linker-visual {
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.12);
+          border-radius: var(--radius-md);
+          padding: 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          align-items: center;
+        }
+        .lp-linker-node {
+          width: 100%;
+          padding: 12px 14px;
+          border-radius: var(--radius-md);
+          border: 1px solid rgba(255,255,255,0.15);
+        }
+        .lp-linker-node-primary { background: rgba(31,95,191,0.2); border-color: #60A5FA; }
+        .lp-linker-node-secondary { background: rgba(194,87,12,0.2); border-color: var(--color-brand-orange-500); }
+        .lp-node-label { font-size: 0.78rem; font-weight: 700; color: #E2E8F0; font-family: var(--font-mono); }
+        .lp-node-sub { font-size: 0.72rem; color: #94A3B8; margin-top: 3px; }
+        .lp-linker-connect {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: #34D399;
+          font-size: 0.78rem;
+          font-weight: 700;
+        }
+        .lp-linker-inst {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 0.75rem;
+          color: #94A3B8;
+          border-top: 1px solid rgba(255,255,255,0.1);
+          padding-top: 10px;
+          width: 100%;
+          text-align: center;
+          justify-content: center;
+        }
+
+        /* ── CATEGORIES ── */
+        .lp-categories-section {
+          padding: 72px 0;
+          background: #fff;
+          border-top: 1px solid var(--color-neutral-200);
+          border-bottom: 1px solid var(--color-neutral-200);
+        }
+        .lp-cat-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 20px;
+        }
+        .lp-cat-card {
           background: var(--color-neutral-100);
-          color: var(--color-neutral-700);
+          border: 1px solid var(--color-neutral-200);
+          border-radius: var(--radius-lg);
+          padding: 24px;
+          text-align: left;
+          cursor: pointer;
+          font-family: var(--font-sans);
+          transition: border-color 0.15s ease, box-shadow 0.15s ease;
+          display: flex;
+          flex-direction: column;
+        }
+        .lp-cat-card:hover {
+          border-color: var(--color-brand-blue-600);
+          box-shadow: var(--shadow-soft);
+          background: #fff;
+        }
+        .lp-cat-urgent {
+          border-color: #FCA5A5;
+          background: #FFF5F5;
+        }
+        .lp-cat-urgent:hover {
+          border-color: #DC2626;
+          background: #FFF;
+        }
+        .lp-cat-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 14px;
+        }
+        .lp-cat-icon {
+          width: 44px;
+          height: 44px;
+          border-radius: var(--radius-md);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .lp-cat-icon-blue { background: #EFF6FF; color: var(--color-brand-blue-600); }
+        .lp-cat-icon-red  { background: #FEE2E2; color: #DC2626; }
+        .lp-cat-badge {
+          font-size: 0.7rem;
+          font-weight: 700;
+          padding: 3px 8px;
           border-radius: var(--radius-pill);
         }
-        .badge-urgent {
-          background: #FEE2E2;
-          color: #B91C1C;
-        }
-        .cat-icon-style {
-          color: var(--color-navy-900);
-        }
-        .icon-ragging { color: #DC2626; }
-        .icon-fees { color: #D97706; }
-        .icon-scholarship { color: #2563EB; }
-        .icon-icc { color: #7C3AED; }
-        .icon-infra { color: #4B5563; }
-        .icon-admission { color: #059669; }
-        .cat-card h4 {
-          font-size: 1.05rem;
+        .lp-cat-badge-blue   { background: #EFF6FF; color: var(--color-brand-blue-600); }
+        .lp-cat-badge-red    { background: #FEE2E2; color: #DC2626; }
+        .lp-cat-badge-purple { background: #F3E8FF; color: #7E22CE; }
+        .lp-cat-title {
+          font-size: 0.975rem;
           font-weight: 700;
-          margin-bottom: 6px;
+          color: var(--color-navy-900);
+          margin: 0 0 8px;
         }
-        .cat-desc {
-          font-size: 0.85rem;
+        .lp-cat-desc {
+          font-size: 0.825rem;
           color: var(--color-neutral-600);
-          margin-bottom: 16px;
+          line-height: 1.5;
+          flex: 1;
+          margin: 0 0 14px;
         }
-        .cat-action-link {
-          font-size: 0.85rem;
-          font-weight: 600;
-          color: var(--color-brand-blue-600);
+        .lp-cat-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 0.8rem;
+          font-weight: 700;
+          color: var(--color-action-600);
         }
-        .link-urgent {
-          color: #DC2626;
-        }
+        .lp-cat-urgent .lp-cat-link { color: #DC2626; }
 
-        .stats-section {
-          background-color: var(--color-navy-900);
+        /* ── HELPLINES ── */
+        .lp-helplines-section {
+          background: var(--color-navy-900);
+          padding: 28px 0;
+        }
+        .lp-helplines-inner {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 24px;
+          flex-wrap: wrap;
+        }
+        .lp-helplines-left {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+        .lp-helpline-icon-wrap {
+          width: 44px;
+          height: 44px;
+          background: rgba(242,137,94,0.2);
+          border: 1px solid var(--color-brand-orange-500);
+          border-radius: var(--radius-md);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--color-brand-orange-500);
+          flex-shrink: 0;
+        }
+        .lp-helplines-h2 {
+          font-size: 1rem;
+          font-weight: 700;
           color: #FFFFFF;
-          padding: 40px 0;
+          margin: 0 0 4px;
         }
-        .stat-card {
-          text-align: center;
-          padding: 12px;
-        }
-        .stat-number {
-          display: block;
-          font-size: 2.2rem;
-          font-weight: 800;
-          color: #F8FAFC;
-          font-family: var(--font-mono);
-          letter-spacing: -0.5px;
-        }
-        .stat-label {
-          font-size: 0.85rem;
+        .lp-helplines-sub {
+          font-size: 0.8rem;
           color: #94A3B8;
         }
+        .lp-helplines-right {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+        .lp-hl-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 16px;
+          border-radius: var(--radius-md);
+          text-decoration: none;
+          font-size: 0.85rem;
+          font-weight: 700;
+          min-height: 44px;
+          transition: opacity 0.15s ease;
+        }
+        .lp-hl-pill:hover { opacity: 0.85; }
+        .lp-hl-pill span { font-size: 0.72rem; font-weight: 600; opacity: 0.85; }
+        .lp-hl-pill strong { font-size: 1rem; font-family: var(--font-mono); }
+        .lp-hl-red  { background: rgba(220,38,38,0.2); border: 1px solid #F87171; color: #FCA5A5; }
+        .lp-hl-pink { background: rgba(219,39,119,0.2); border: 1px solid #F472B6; color: #FBCFE8; }
+        .lp-hl-blue { background: rgba(59,130,246,0.2); border: 1px solid #60A5FA; color: #BFDBFE; }
 
-        @media (max-width: 768px) {
-          .hero-heading {
-            font-size: 1.6rem;
-          }
-          .hero-action-cards {
+        /* ── RESPONSIVE ── */
+        @media (max-width: 900px) {
+          .lp-hero-inner {
             grid-template-columns: 1fr;
+            gap: 32px;
           }
-          .explainer-cards {
-            grid-template-columns: 1fr;
-          }
-          .category-cards-grid {
-            grid-template-columns: 1fr;
-          }
-          .stats-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
+          .lp-hero-h1 { font-size: 1.9rem; }
+          .lp-portal-grid { grid-template-columns: 1fr; }
+          .lp-cat-grid { grid-template-columns: 1fr 1fr; }
+          .lp-stats-inner { grid-template-columns: repeat(2, 1fr); }
+          .lp-linker-card { grid-template-columns: 1fr; }
+          .lp-linker-right { display: none; }
+          .lp-steps-grid { flex-direction: column; }
+          .lp-step-connector { transform: rotate(90deg); padding: 8px 0; }
+        }
+        @media (max-width: 600px) {
+          .lp-hero { padding: 36px 0 32px; }
+          .lp-cat-grid { grid-template-columns: 1fr; }
+          .lp-stats-inner { grid-template-columns: repeat(2,1fr); }
+          .lp-portals-section, .lp-how-section, .lp-linker-section, .lp-categories-section { padding: 48px 0; }
+          .lp-helplines-inner { flex-direction: column; align-items: flex-start; }
+          .lp-ticker-text { display: none; }
         }
       `}</style>
     </div>

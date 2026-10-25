@@ -1,33 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { translations, Language } from '../locales/translations';
 import { ActiveTab } from '../components/Navbar';
 import { DiscordServer, DiscordChannel, DiscordMessage, DiscordMember } from '../types';
-import { 
-  mockDiscordServers, 
-  mockDiscordChannels, 
-  mockDiscordMessages, 
-  mockDiscordMembers 
+import {
+  mockDiscordServers,
+  mockDiscordChannels,
+  mockDiscordMessages,
+  mockDiscordMembers
 } from '../data/mockData';
-import { 
-  Hash, 
-  Volume2, 
-  Bell, 
-  Pin, 
-  Users, 
-  Search, 
-  PlusCircle, 
-  Smile, 
-  Send, 
-  Mic, 
-  MicOff, 
-  Headphones, 
-  Settings, 
-  ShieldAlert, 
-  HelpCircle,
-  Sparkles,
-  ExternalLink,
-  Radio
-} from 'lucide-react';
+import { Icon } from '../components/Icon';
 
 interface DiscordReplicaViewProps {
   lang: Language;
@@ -44,15 +25,28 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
   const [inputContent, setInputContent] = useState('');
   const [isVoiceConnected, setIsVoiceConnected] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [isDeafened, setIsDeafened] = useState(false);
   const [showMembers, setShowMembers] = useState(true);
+  const [searchFilter, setSearchFilter] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const currentMessages = messagesMap[selectedChannel.id] || [];
+
+  const filteredMessages = currentMessages.filter(m => {
+    if (!searchFilter.trim()) return true;
+    return m.content.toLowerCase().includes(searchFilter.toLowerCase()) ||
+      m.author.name.toLowerCase().includes(searchFilter.toLowerCase());
+  });
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [selectedChannel.id, messagesMap]);
 
   const handleSendMessage = (contentToSend?: string) => {
     const text = contentToSend || inputContent;
     if (!text.trim()) return;
 
-    // Check if it's a slash command like /status or /helpline
+    // Check for slash commands
     if (text.startsWith('/status')) {
       const botMsg: DiscordMessage = {
         id: `m-bot-${Date.now()}`,
@@ -63,15 +57,16 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
           roleColor: '#5865F2',
           avatarBg: '#5865F2'
         },
-        timestamp: 'Just now',
+        timestamp: 'Today at ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         content: `🔍 **Grievance Status Lookup for AICTE-2026-GRV-84920:**`,
         embedCard: {
-          title: 'Case AICTE-2026-GRV-84920 · Delhi Technological University',
-          description: 'Grievance Stage: **Stage 5 - Pending Citizen OTP Acknowledgment**\nAssigned Officer: Dr. Ramesh Chandra Verma (PGRC AICTE)\nAction: College uploaded refund receipt for ₹44,000.',
+          title: 'Case AICTE-2026-GRV-84920 · Delhi Technological University (DTU)',
+          description: 'Grievance Stage: **Stage 5 - Pending Citizen OTP Acknowledgment**\nAssigned Officer: Dr. Ramesh Chandra Verma (PGRC AICTE HQ)\nAction: College accounts uploaded net refund receipt for ₹44,000.',
           color: '#10B981',
           fields: [
             { name: 'SLA Status', value: '18h Remaining' },
-            { name: 'Next Step', value: 'Input 6-Digit OTP in portal tracker' }
+            { name: 'Next Step', value: 'Input 6-Digit OTP in portal tracker' },
+            { name: 'Linked Cases', value: '1 Related Seat Surrender Case Linked' }
           ]
         }
       };
@@ -93,8 +88,29 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
           roleColor: '#5865F2',
           avatarBg: '#5865F2'
         },
-        timestamp: 'Just now',
-        content: `🚨 **AICTE National 24x7 Emergency Helplines:**\n• **Anti-Ragging:** \`1800-180-5522\` (Toll-Free, Zero-Tolerance FIR)\n• **Women Helpline (ICC):** \`1091\`\n• **Tele-MANAS Mental Health:** \`14416\`\n• **National Cyber Crime:** \`1930\``
+        timestamp: 'Today at ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        content: `🚨 **AICTE National 24x7 Emergency Helplines:**\n• **Anti-Ragging Squad:** \`1800-180-5522\` (Toll-Free, Mandatory 24h FIR)\n• **Women Safety Helpline (ICC):** \`1091\`\n• **Tele-MANAS Mental Health:** \`14416\`\n• **National Cyber Crime:** \`1930\`\n• **AICTE PGRC HQ Desk:** \`011-29581000\``
+      };
+      setMessagesMap(prev => ({
+        ...prev,
+        [selectedChannel.id]: [...(prev[selectedChannel.id] || []), botMsg]
+      }));
+      setInputContent('');
+      return;
+    }
+
+    if (text.startsWith('/rules')) {
+      const botMsg: DiscordMessage = {
+        id: `m-bot-${Date.now()}`,
+        channelId: selectedChannel.id,
+        author: {
+          name: 'AICTE Circular Bot',
+          roleTag: 'SYSTEM BOT',
+          roleColor: '#5865F2',
+          avatarBg: '#5865F2'
+        },
+        timestamp: 'Today at ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        content: `📜 **AICTE Redressal Directives (Chapter 10 & 2026 Regulations):**\n1. **Fee Refunds:** Max deduction of ₹1,000 permitted if seat is vacated within prescribed cutoff.\n2. **Original Documents:** Colleges strictly barred from retaining student certificates.\n3. **72h SLA:** First response from institute nodal cell mandated within 72 hours.`
       };
       setMessagesMap(prev => ({
         ...prev,
@@ -125,48 +141,61 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
   };
 
   return (
-    <div className="discord-app-wrapper" id="main-content">
+    <div className="discord-app-root" id="main-content">
       {/* Top Breadcrumb & Synergy Bar */}
       <div className="discord-top-bar flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="discord-pill">AICTE NIVARAN Hub</span>
-          <span className="text-white-sub">Unified Student & Bureau Coordination Gateway</span>
+        <div className="flex items-center gap-3">
+          <span className="discord-pill">DISCORD COMMUNITY REPLICA</span>
+          <span className="text-white-sub">AICTE NIVARAN · Multi-University Student & Bureau Coordination Hub</span>
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
             className="btn btn-outline btn-sm-back"
-            onClick={() => setActiveTab('dashboard')}
+            onClick={() => setActiveTab('citizen')}
           >
-            ← Return to Citizen Dashboard
+            ← Return to Citizen Portal
+          </button>
+          <button
+            type="button"
+            className="btn btn-outline btn-sm-back"
+            onClick={() => setActiveTab('admin')}
+          >
+            <Icon e="🏛️" size={15} /> Administration Portal
           </button>
         </div>
       </div>
 
-      <div className="discord-main-layout">
-        {/* 1. Leftmost Server Icon Strip */}
+      <div className="discord-viewport">
+        {/* 1. Leftmost Server Rail */}
         <div className="discord-servers-strip" role="navigation" aria-label="Coordination Servers">
-          <div 
-            className="server-icon-btn aicte-home-icon active-server"
-            title="AICTE NIVARAN Central Hub"
-            onClick={() => setSelectedServer(mockDiscordServers[0])}
-          >
-            <img src="/aicte-nivaran-logo.png" alt="AICTE NIVARAN" className="discord-server-logo" />
+          {/* AICTE Main Server */}
+          <div className="server-icon-wrapper">
+            <div className={`server-pill-indicator ${selectedServer.id === 'server-aicte' ? 'active' : ''}`}></div>
+            <div 
+              className={`server-icon-btn aicte-home-icon ${selectedServer.id === 'server-aicte' ? 'active-server' : ''}`}
+              title="AICTE NIVARAN Central Hub"
+              onClick={() => setSelectedServer(mockDiscordServers[0])}
+            >
+              <img src="/aicte-nivaran-logo.png" alt="AICTE NIVARAN" className="discord-server-logo" />
+            </div>
           </div>
 
           <div className="server-divider"></div>
 
           {mockDiscordServers.map((srv) => (
-            <div
-              key={srv.id}
-              className={`server-icon-btn ${selectedServer.id === srv.id ? 'active-server' : ''}`}
-              title={srv.name}
-              onClick={() => setSelectedServer(srv)}
-            >
-              <span className="server-icon-text">{srv.iconText}</span>
-              {srv.unreadCount && srv.unreadCount > 0 && (
-                <span className="server-unread-badge">{srv.unreadCount}</span>
-              )}
+            <div key={srv.id} className="server-icon-wrapper">
+              <div className={`server-pill-indicator ${selectedServer.id === srv.id ? 'active' : ''}`}></div>
+              <div
+                className={`server-icon-btn ${selectedServer.id === srv.id ? 'active-server' : ''}`}
+                title={srv.name}
+                onClick={() => setSelectedServer(srv)}
+              >
+                <span className="server-icon-text">{srv.iconText}</span>
+                {srv.unreadCount && srv.unreadCount > 0 && (
+                  <span className="server-unread-badge">{srv.unreadCount}</span>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -175,13 +204,18 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
         <div className="discord-channel-sidebar">
           {/* Server Title Header */}
           <div className="server-sidebar-header flex items-center justify-between">
-            <span className="server-header-title">{selectedServer.name}</span>
-            <span className="server-verified-star">✓</span>
+            <div className="flex items-center gap-2 truncate">
+              <span className="server-header-title truncate">{selectedServer.name}</span>
+              <span className="server-verified-star" title="Official AICTE Verified Server">✓</span>
+            </div>
+            <Icon e="▾" size={18} className="text-muted flex-shrink-0" />
           </div>
 
           {/* Channels List */}
           <div className="channels-scroll-area">
-            <div className="channel-category-label">TEXT CHANNELS</div>
+            <div className="channel-category-label flex items-center justify-between">
+              <span>TEXT CHANNELS</span>
+            </div>
 
             {mockDiscordChannels.filter(c => c.type === 'text').map((ch) => (
               <div
@@ -189,12 +223,14 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
                 className={`channel-item flex items-center gap-2 ${selectedChannel.id === ch.id ? 'active-channel' : ''}`}
                 onClick={() => setSelectedChannel(ch)}
               >
-                <Hash size={18} className="channel-hash-icon" />
-                <span className="channel-name-text">{ch.name}</span>
+                <Icon e="#" size={18} className="channel-hash-icon" />
+                <span className="channel-name-text truncate">{ch.name}</span>
               </div>
             ))}
 
-            <div className="channel-category-label mt-3">VOICE CHANNELS</div>
+            <div className="channel-category-label flex items-center justify-between mt-3">
+              <span>VOICE ROOMS</span>
+            </div>
 
             {mockDiscordChannels.filter(c => c.type === 'voice').map((ch) => (
               <div
@@ -205,22 +241,22 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
                   setIsVoiceConnected(true);
                 }}
               >
-                <div className="flex items-center gap-2">
-                  <Volume2 size={18} className="channel-hash-icon text-voice" />
-                  <span className="channel-name-text">{ch.name}</span>
+                <div className="flex items-center gap-2 truncate">
+                  <Icon e="??" size={18} className="channel-hash-icon text-voice" />
+                  <span className="channel-name-text truncate">{ch.name}</span>
                 </div>
-                {isVoiceConnected && (
-                  <span className="voice-connected-dot" title="Connected to Voice"></span>
+                {isVoiceConnected && selectedChannel.id === ch.id && (
+                  <span className="voice-connected-dot" title="Voice Connected"></span>
                 )}
               </div>
             ))}
 
-            {/* Voice Room Status Card if connected */}
+            {/* Voice Connection Status Box if connected */}
             {isVoiceConnected && (
               <div className="voice-connection-status card">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Radio size={16} className="text-voice animate-pulse" />
+                    <Icon e="??" size={16} className="text-voice animate-pulse" />
                     <div>
                       <strong className="voice-room-title">Voice Connected</strong>
                       <span className="voice-room-sub">Grievance Advisory Lounge / 64kbps</span>
@@ -232,7 +268,7 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
                     onClick={() => setIsVoiceConnected(false)}
                     title="Disconnect Voice"
                   >
-                    Disconnect
+                    <Icon e="??" size={12} />
                   </button>
                 </div>
               </div>
@@ -241,127 +277,129 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
 
           {/* User Profile Footer */}
           <div className="discord-user-footer flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 truncate">
               <div className="user-disc-avatar">
                 AS
                 <span className="presence-dot online"></span>
               </div>
-              <div className="user-disc-meta">
-                <strong className="user-disc-name">Aarav Sharma</strong>
+              <div className="user-disc-meta truncate">
+                <strong className="user-disc-name truncate">Aarav Sharma</strong>
                 <span className="user-disc-tag">#4129 · Student</span>
               </div>
             </div>
 
-            <div className="user-disc-controls flex items-center gap-1">
+            <div className="user-disc-controls flex items-center">
               <button
                 type="button"
-                className="disc-ctrl-btn"
+                className={`disc-ctrl-btn ${isMuted ? 'btn-danger-active' : ''}`}
                 onClick={() => setIsMuted(!isMuted)}
-                title={isMuted ? 'Unmute Mic' : 'Mute Mic'}
+                title={isMuted ? 'Unmute' : 'Mute'}
               >
-                {isMuted ? <MicOff size={16} className="text-danger" /> : <Mic size={16} />}
+                {isMuted ? <Icon e="??" size={16} className="text-danger" /> : <Icon e="??" size={16} />}
               </button>
-              <button type="button" className="disc-ctrl-btn" title="Headphones">
-                <Headphones size={16} />
+              <button
+                type="button"
+                className={`disc-ctrl-btn ${isDeafened ? 'btn-danger-active' : ''}`}
+                onClick={() => setIsDeafened(!isDeafened)}
+                title={isDeafened ? 'Undeafen' : 'Deafen'}
+              >
+                <Icon e="??" size={16} />
               </button>
-              <button type="button" className="disc-ctrl-btn" title="User Settings">
-                <Settings size={16} />
+              <button type="button" className="disc-ctrl-btn" title="Settings">
+                <Icon e="??" size={16} />
               </button>
             </div>
           </div>
         </div>
 
-        {/* 3. Main Discord Messages Area */}
+        {/* 3. Main Messages Area */}
         <div className="discord-chat-main">
-          {/* Channel Header Bar */}
+          {/* Header Bar */}
           <div className="chat-channel-header flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 truncate">
               {selectedChannel.type === 'text' ? (
-                <Hash size={22} className="header-hash text-muted" />
+                <Icon e="#" size={22} className="header-hash text-muted" />
               ) : (
-                <Volume2 size={22} className="header-hash text-voice" />
+                <Icon e="??" size={22} className="header-hash text-voice" />
               )}
-              <strong className="header-channel-title">{selectedChannel.name}</strong>
+              <strong className="header-channel-title truncate">{selectedChannel.name}</strong>
               <span className="channel-desc-divider">|</span>
-              <span className="channel-desc-preview hide-on-mobile">{selectedChannel.description}</span>
+              <span className="channel-desc-preview hide-on-mobile truncate">{selectedChannel.description}</span>
             </div>
 
-            <div className="channel-header-actions flex items-center gap-3">
-              <button 
-                type="button" 
-                className="btn-discord-action" 
-                title="AICTE Case Status Bot Command"
+            <div className="channel-header-actions flex items-center gap-2">
+              <div className="discord-search-box flex items-center gap-1.5">
+                <Icon e="??" size={14} className="text-muted" />
+                <input
+                  type="text"
+                  placeholder="Search channel..."
+                  value={searchFilter}
+                  onChange={(e) => setSearchFilter(e.target.value)}
+                  className="discord-search-input"
+                />
+              </div>
+
+              <button
+                type="button"
+                className="btn-discord-action"
+                title="AICTE Case Status Lookup"
                 onClick={() => handleSendMessage('/status AICTE-2026-GRV-84920')}
               >
-                <Sparkles size={16} />
+                <Icon e="✨" size={14} />
                 <span>/status</span>
               </button>
-              <button 
-                type="button" 
-                className="btn-discord-action"
-                title="Helpline Command"
-                onClick={() => handleSendMessage('/helpline')}
-              >
-                <ShieldAlert size={16} />
-                <span>/helpline</span>
-              </button>
-              <button 
-                type="button" 
+
+              <button
+                type="button"
                 className={`btn-discord-icon ${showMembers ? 'active' : ''}`}
-                onClick={() => setShowMembers(!showMembers)}
                 title="Toggle Members List"
+                onClick={() => setShowMembers(!showMembers)}
               >
-                <Users size={18} />
+                <Icon e="??" size={18} />
               </button>
             </div>
           </div>
 
           {/* Messages Feed */}
           <div className="messages-feed-area">
-            {currentMessages.map((msg) => (
+            <div className="channel-welcome-banner">
+              <div className="welcome-hash-circle">
+                <Icon e="#" size={36} />
+              </div>
+              <h2 className="welcome-title">Welcome to #{selectedChannel.name}!</h2>
+              <p className="welcome-desc">
+                This is the official channel for {selectedChannel.name}. Connect with verified student representatives and AICTE nodal bureau delegates.
+              </p>
+            </div>
+
+            {filteredMessages.map((msg) => (
               <div key={msg.id} className="discord-message-row">
-                <div 
-                  className="msg-avatar-circle"
-                  style={{ backgroundColor: msg.author.avatarBg }}
-                >
+                <div className="msg-avatar-circle" style={{ backgroundColor: msg.author.avatarBg }}>
                   {msg.author.name.slice(0, 2).toUpperCase()}
                 </div>
-
-                <div className="msg-body-wrap">
+                <div className="msg-content-block">
                   <div className="msg-author-header flex items-center gap-2">
-                    <strong 
-                      className="author-name"
-                      style={{ color: msg.author.roleColor }}
-                    >
+                    <strong className="author-name" style={{ color: msg.author.roleColor }}>
                       {msg.author.name}
                     </strong>
-                    <span 
-                      className="role-badge-tag"
-                      style={{ backgroundColor: msg.author.roleColor }}
-                    >
+                    <span className="role-badge-tag" style={{ backgroundColor: msg.author.roleColor }}>
                       {msg.author.roleTag}
                     </span>
                     <span className="msg-timestamp">{msg.timestamp}</span>
                   </div>
 
                   <div className="msg-text-content">
-                    {msg.content.split('\n').map((line, i) => (
-                      <p key={i}>{line}</p>
-                    ))}
+                    {msg.content}
                   </div>
 
-                  {/* Rich Embed Card if present */}
                   {msg.embedCard && (
-                    <div 
-                      className="discord-embed-card"
-                      style={{ borderLeftColor: msg.embedCard.color }}
-                    >
+                    <div className="discord-embed-card" style={{ borderLeftColor: msg.embedCard.color }}>
                       <strong className="embed-title">{msg.embedCard.title}</strong>
                       <p className="embed-desc">{msg.embedCard.description}</p>
                       {msg.embedCard.fields && (
                         <div className="embed-fields-grid grid grid-cols-2 gap-2 mt-2">
-                          {msg.embedCard.fields.map((f, fi) => (
-                            <div key={fi} className="embed-field-box">
+                          {msg.embedCard.fields.map((f, i) => (
+                            <div key={i} className="embed-field-box">
                               <span className="field-name">{f.name}</span>
                               <span className="field-val">{f.value}</span>
                             </div>
@@ -373,118 +411,107 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
                 </div>
               </div>
             ))}
+            <div ref={messagesEndRef} />
           </div>
 
           {/* Quick Slash Commands Strip */}
           <div className="discord-quick-pills flex items-center gap-2">
-            <span className="slash-label">Interactive Bot Prompts:</span>
-            <button 
-              type="button" 
+            <span className="slash-label">Quick Commands:</span>
+            <button
+              type="button"
               className="slash-pill"
               onClick={() => handleSendMessage('/status AICTE-2026-GRV-84920')}
             >
               /status AICTE-2026-GRV-84920
             </button>
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="slash-pill"
               onClick={() => handleSendMessage('/helpline')}
             >
               /helpline
             </button>
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="slash-pill"
-              onClick={() => handleSendMessage('Has anyone received their Pragati scholarship approval from the college verification cell this week?')}
+              onClick={() => handleSendMessage('/rules')}
             >
-              Ask about Pragati Scholarship
+              /rules
             </button>
           </div>
 
-          {/* Input Box */}
+          {/* Input Bar */}
           <div className="discord-input-container">
-            <div className="discord-input-inner flex items-center gap-2">
-              <button 
-                type="button" 
-                className="input-attachment-btn" 
-                title="Attach Document or Screenshot"
-                onClick={() => alert('Discord attachment: select image or PDF to send to channel.')}
+            <form
+              className="discord-input-inner flex items-center gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSendMessage();
+              }}
+            >
+              <button
+                type="button"
+                className="input-attachment-btn"
+                title="Attach evidence or image"
+                onClick={() => alert('Attachments can be verified via the AICTE Evidence Vault.')}
               >
-                <PlusCircle size={20} />
+                <Icon e="➕" size={20} />
               </button>
 
               <input
                 type="text"
                 className="discord-text-input"
-                placeholder={`Message #${selectedChannel.name} (type /status or /helpline)...`}
+                placeholder={`Message #${selectedChannel.name} (type /status or /helpline for bot)`}
                 value={inputContent}
                 onChange={(e) => setInputContent(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSendMessage();
-                }}
               />
-
-              <button 
-                type="button" 
-                className="input-action-btn"
-                title="Insert Reaction Emoji"
-                onClick={() => setInputContent(prev => prev + ' 🎓')}
-              >
-                <Smile size={20} />
-              </button>
 
               <button
                 type="button"
+                className="input-action-btn"
+                title="Add emoji"
+                onClick={() => setInputContent(prev => prev + ' 🇮🇳')}
+              >
+                <Icon e="??" size={20} />
+              </button>
+
+              <button
+                type="submit"
                 className="discord-send-btn"
-                onClick={() => handleSendMessage()}
                 disabled={!inputContent.trim()}
               >
-                <Send size={18} />
+                <Icon e="➤" size={16} />
               </button>
-            </div>
+            </form>
           </div>
         </div>
 
-        {/* 4. Right Members List */}
+        {/* 4. Right Members Sidebar */}
         {showMembers && (
           <div className="discord-members-sidebar">
-            <div className="members-group-title">ONLINE OFFICIALS & ADVISORS — 2</div>
-            {mockDiscordMembers.filter(m => m.isOnline && m.roleTag.includes('Officer')).map((m) => (
-              <div key={m.id} className="member-row flex items-center gap-2">
-                <div className="member-avatar">
-                  {m.name.slice(0, 2).toUpperCase()}
-                  <span className="presence-dot online"></span>
-                </div>
-                <div>
-                  <strong className="member-name" style={{ color: m.roleColor }}>{m.name}</strong>
-                  <span className="member-status-sub">{m.statusText}</span>
-                </div>
-              </div>
-            ))}
-
-            <div className="members-group-title mt-3">LEGAL COUNSEL — 1</div>
-            {mockDiscordMembers.filter(m => m.isOnline && m.roleTag.includes('Counsel')).map((m) => (
-              <div key={m.id} className="member-row flex items-center gap-2">
-                <div className="member-avatar">
-                  {m.name.slice(0, 2).toUpperCase()}
-                  <span className="presence-dot online"></span>
-                </div>
-                <div>
-                  <strong className="member-name" style={{ color: m.roleColor }}>{m.name}</strong>
-                  <span className="member-status-sub">{m.statusText}</span>
-                </div>
-              </div>
-            ))}
-
-            <div className="members-group-title mt-3">BOTS — 1</div>
+            <div className="members-group-title">OFFICIAL AICTE BOTS — 1</div>
             {mockDiscordMembers.filter(m => m.roleTag.includes('BOT')).map((m) => (
               <div key={m.id} className="member-row flex items-center gap-2">
                 <div className="member-avatar bot-avatar">
-                  🤖
+                  BOT
                   <span className="presence-dot online"></span>
                 </div>
                 <div>
                   <strong className="member-name text-bot">{m.name}</strong>
+                  <span className="member-status-sub">{m.statusText}</span>
+                </div>
+              </div>
+            ))}
+
+            <div className="members-group-title mt-3">AICTE NODAL OFFICERS — 1</div>
+            {mockDiscordMembers.filter(m => m.roleTag.includes('Officer')).map((m) => (
+              <div key={m.id} className="member-row flex items-center gap-2">
+                <div className="member-avatar">
+                  RV
+                  <span className="presence-dot online"></span>
+                </div>
+                <div>
+                  <strong className="member-name" style={{ color: m.roleColor }}>{m.name}</strong>
                   <span className="member-status-sub">{m.statusText}</span>
                 </div>
               </div>
@@ -508,13 +535,14 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
       </div>
 
       <style>{`
-        .discord-app-wrapper {
+        .discord-app-root {
           background-color: var(--discord-bg);
           color: var(--discord-text-primary);
-          height: calc(100vh - 130px);
-          min-height: 620px;
+          height: calc(100vh - 105px);
           display: flex;
           flex-direction: column;
+          overflow: hidden;
+          font-family: var(--font-sans);
         }
 
         .discord-top-bar {
@@ -522,14 +550,16 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
           padding: 8px 16px;
           border-bottom: 1px solid rgba(255, 255, 255, 0.08);
           font-size: 0.8125rem;
+          flex-shrink: 0;
         }
         .discord-pill {
           background-color: #5865F2;
           color: #FFFFFF;
-          font-weight: 700;
+          font-weight: 800;
           font-size: 0.72rem;
           padding: 2px 8px;
           border-radius: var(--radius-pill);
+          letter-spacing: 0.5px;
         }
         .text-white-sub {
           color: #949BA4;
@@ -539,26 +569,54 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
           padding: 4px 10px;
           color: #DBDEE1;
           border-color: #4E5058;
-          min-height: 30px;
+          min-height: 28px;
+        }
+        .btn-sm-back:hover {
+          background-color: #35373C;
+          color: #FFFFFF;
         }
 
-        .discord-main-layout {
+        .discord-viewport {
           display: flex;
           flex: 1;
           overflow: hidden;
         }
 
-        /* Server Rail */
+        /* 1. Server Rail */
         .discord-servers-strip {
           width: 72px;
-          background-color: var(--discord-server-rail);
+          background-color: #1E1F22;
           display: flex;
           flex-direction: column;
           align-items: center;
           padding: 12px 0;
-          gap: 10px;
+          gap: 8px;
           overflow-y: auto;
+          flex-shrink: 0;
         }
+        .server-icon-wrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+        }
+        .server-pill-indicator {
+          position: absolute;
+          left: 0;
+          width: 4px;
+          height: 0;
+          background-color: #FFFFFF;
+          border-radius: 0 4px 4px 0;
+          transition: height 0.15s ease;
+        }
+        .server-icon-wrapper:hover .server-pill-indicator {
+          height: 20px;
+        }
+        .server-pill-indicator.active {
+          height: 40px !important;
+        }
+
         .server-icon-btn {
           width: 48px;
           height: 48px;
@@ -572,12 +630,7 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
           position: relative;
           transition: border-radius 0.2s ease, background-color 0.2s ease;
         }
-        .server-icon-btn:hover {
-          border-radius: 16px;
-          background-color: #5865F2;
-          color: #FFFFFF;
-        }
-        .server-icon-btn.active-server {
+        .server-icon-btn:hover, .server-icon-btn.active-server {
           border-radius: 16px;
           background-color: #5865F2;
           color: #FFFFFF;
@@ -624,13 +677,14 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
           border: 2px solid #1E1F22;
         }
 
-        /* Channels Sidebar */
+        /* 2. Channel Sidebar */
         .discord-channel-sidebar {
           width: 240px;
-          background-color: var(--discord-sidebar);
+          background-color: #2B2D31;
           display: flex;
           flex-direction: column;
           border-right: 1px solid rgba(0, 0, 0, 0.2);
+          flex-shrink: 0;
         }
         .server-sidebar-header {
           height: 48px;
@@ -639,6 +693,11 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
           font-weight: 700;
           font-size: 0.95rem;
           color: #F2F3F5;
+          cursor: pointer;
+          transition: background 0.15s ease;
+        }
+        .server-sidebar-header:hover {
+          background-color: #35373C;
         }
         .server-verified-star {
           background: #5865F2;
@@ -650,7 +709,9 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
           display: flex;
           align-items: center;
           justify-content: center;
+          font-weight: 800;
         }
+
         .channels-scroll-area {
           flex: 1;
           padding: 12px 8px;
@@ -674,16 +735,17 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
           margin-bottom: 2px;
         }
         .channel-item:hover {
-          background-color: var(--discord-item-hover);
+          background-color: #35373C;
           color: #DBDEE1;
         }
         .channel-item.active-channel {
-          background-color: var(--discord-active);
+          background-color: #404249;
           color: #FFFFFF;
           font-weight: 600;
         }
         .channel-hash-icon {
           color: #80848E;
+          flex-shrink: 0;
         }
         .text-voice {
           color: #23A55A !important;
@@ -710,21 +772,22 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
         .voice-room-sub {
           font-size: 0.68rem;
           color: #949BA4;
+          display: block;
         }
         .btn-disconnect-voice {
           background: #DA373C;
           color: #FFFFFF;
           border: none;
-          font-size: 0.68rem;
-          padding: 2px 6px;
-          border-radius: 3px;
+          padding: 4px 6px;
+          border-radius: 4px;
           cursor: pointer;
         }
 
         .discord-user-footer {
-          height: 54px;
+          height: 52px;
           background: #232428;
           padding: 0 10px;
+          flex-shrink: 0;
         }
         .user-disc-avatar {
           width: 32px;
@@ -738,6 +801,7 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
           align-items: center;
           justify-content: center;
           position: relative;
+          flex-shrink: 0;
         }
         .presence-dot {
           width: 10px;
@@ -773,19 +837,24 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
           background: #35373C;
           color: #FFFFFF;
         }
+        .btn-danger-active {
+          color: #DA373C !important;
+        }
 
-        /* Chat Main */
+        /* 3. Chat Main */
         .discord-chat-main {
           flex: 1;
           display: flex;
           flex-direction: column;
-          background-color: var(--discord-bg);
+          background-color: #313338;
+          overflow: hidden;
         }
         .chat-channel-header {
           height: 48px;
           padding: 0 16px;
           border-bottom: 1px solid rgba(0, 0, 0, 0.2);
           box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+          flex-shrink: 0;
         }
         .header-channel-title {
           font-size: 1rem;
@@ -798,6 +867,19 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
         .channel-desc-preview {
           font-size: 0.8rem;
           color: #949BA4;
+        }
+        .discord-search-box {
+          background: #1E1F22;
+          padding: 4px 8px;
+          border-radius: 4px;
+        }
+        .discord-search-input {
+          background: transparent;
+          border: none;
+          outline: none;
+          color: #DBDEE1;
+          font-size: 0.75rem;
+          width: 120px;
         }
         .btn-discord-action {
           background: #2B2D31;
@@ -821,8 +903,9 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
           color: #B5BAC1;
           cursor: pointer;
           padding: 4px;
+          border-radius: 4px;
         }
-        .btn-discord-icon.active {
+        .btn-discord-icon:hover, .btn-discord-icon.active {
           color: #FFFFFF;
         }
 
@@ -832,11 +915,44 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
           padding: 16px 20px;
           display: flex;
           flex-direction: column;
-          gap: 18px;
+          gap: 16px;
         }
+        .channel-welcome-banner {
+          margin-bottom: 16px;
+          padding-bottom: 16px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .welcome-hash-circle {
+          width: 64px;
+          height: 64px;
+          border-radius: 50%;
+          background: #404249;
+          color: #FFFFFF;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 8px;
+        }
+        .welcome-title {
+          font-size: 1.5rem;
+          color: #F2F3F5;
+          margin: 0;
+        }
+        .welcome-desc {
+          font-size: 0.85rem;
+          color: #949BA4;
+          margin-top: 4px;
+        }
+
         .discord-message-row {
           display: flex;
           gap: 14px;
+        }
+        .discord-message-row:hover {
+          background-color: rgba(0, 0, 0, 0.08);
+          margin: -4px -20px;
+          padding: 4px 20px;
+          border-radius: 4px;
         }
         .msg-avatar-circle {
           width: 40px;
@@ -871,6 +987,7 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
           font-size: 0.9375rem;
           color: #DBDEE1;
           line-height: 1.45;
+          white-space: pre-wrap;
         }
         .discord-embed-card {
           background: #2B2D31;
@@ -878,7 +995,7 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
           border-radius: 4px;
           padding: 12px 16px;
           margin-top: 8px;
-          max-width: 520px;
+          max-width: 540px;
         }
         .embed-title {
           font-size: 0.95rem;
@@ -889,6 +1006,7 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
           font-size: 0.85rem;
           color: #DBDEE1;
           margin-top: 4px;
+          white-space: pre-line;
         }
         .embed-field-box {
           background: #1E1F22;
@@ -913,6 +1031,7 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
           border-top: 1px solid rgba(255, 255, 255, 0.05);
           font-size: 0.75rem;
           overflow-x: auto;
+          flex-shrink: 0;
         }
         .slash-label {
           color: #949BA4;
@@ -936,7 +1055,8 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
         }
 
         .discord-input-container {
-          padding: 12px 20px 20px 20px;
+          padding: 10px 20px 16px 20px;
+          flex-shrink: 0;
         }
         .discord-input-inner {
           background: #383A40;
@@ -975,13 +1095,14 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
           cursor: not-allowed;
         }
 
-        /* Members List */
+        /* 4. Members Sidebar */
         .discord-members-sidebar {
           width: 240px;
-          background-color: var(--discord-sidebar);
+          background-color: #2B2D31;
           padding: 16px 12px;
           overflow-y: auto;
           border-left: 1px solid rgba(0, 0, 0, 0.2);
+          flex-shrink: 0;
         }
         .members-group-title {
           font-size: 0.7rem;
@@ -997,7 +1118,7 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
           transition: background-color 0.1s ease;
         }
         .member-row:hover {
-          background-color: var(--discord-item-hover);
+          background-color: #35373C;
         }
         .member-row.offline {
           opacity: 0.5;
@@ -1014,6 +1135,7 @@ export const DiscordReplicaView: React.FC<DiscordReplicaViewProps> = ({
           align-items: center;
           justify-content: center;
           position: relative;
+          flex-shrink: 0;
         }
         .bot-avatar {
           background: #5865F2;
