@@ -171,3 +171,64 @@ mock_otp_sessions: Dict[str, str] = {
     "+91 98712 34567": "849210",
     "aarav.sharma@example.com": "849210"
 }
+
+# Seed case conversations, keyed by grievance id (complainant <-> officer)
+mock_messages: Dict[str, List[Dict[str, Any]]] = {
+    "AICTE-2026-GRV-84920": [
+        {
+            "id": "msg-1",
+            "complaint_id": "AICTE-2026-GRV-84920",
+            "kind": "system",
+            "sender_role": "system",
+            "sender_name": "AICTE Grievance System",
+            "content": "Welcome Aarav Sharma. You are connected to the official enquiry channel for case AICTE-2026-GRV-84920. All messages in this thread are securely logged into the official case audit trail.",
+            "timestamp": "16 Aug 2026, 10:19 AM",
+            "read_by_officer": True,
+            "read_by_complainant": True
+        },
+        {
+            "id": "msg-2",
+            "complaint_id": "AICTE-2026-GRV-84920",
+            "kind": "clarification",
+            "sender_role": "officer",
+            "sender_name": "Dr. Ramesh Chandra Verma (PGRC)",
+            "content": "Dear Complainant Aarav Sharma, I have reviewed your submission and the attached Fee Challan. We have dispatched an urgent statutory requisition to the Registrar of DTU regarding the ₹44,000 refund pursuant to AICTE guidelines. Could you please confirm if you received any written reply from the Dean Academics?",
+            "timestamp": "18 Aug 2026, 11:05 AM",
+            "read_by_officer": True,
+            "read_by_complainant": True
+        },
+        {
+            "id": "msg-3",
+            "complaint_id": "AICTE-2026-GRV-84920",
+            "kind": "text",
+            "sender_role": "complainant",
+            "sender_name": "Aarav Sharma",
+            "content": "Sir, I visited the accounts section twice on 22nd August. They verbally stated that institutional policy requires 3 months for caution money processing. However, as per AICTE handbook, seat withdrawal before cutoff mandates refund within 7 working days.",
+            "timestamp": "18 Aug 2026, 11:20 AM",
+            "read_by_officer": True,
+            "read_by_complainant": True
+        },
+        {
+            "id": "msg-4",
+            "complaint_id": "AICTE-2026-GRV-84920",
+            "kind": "clarification",
+            "sender_role": "officer",
+            "sender_name": "Dr. Ramesh Chandra Verma (PGRC)",
+            "content": "Noted. Institutional internal policy cannot supersede Central AICTE Regulations. We have summoned the College Accounts Nodal Officer for an online hearing tomorrow at 3:00 PM. We will push for direct NEFT clearance.",
+            "timestamp": "18 Aug 2026, 02:40 PM",
+            "read_by_officer": True,
+            "read_by_complainant": True
+        },
+        {
+            "id": "msg-5",
+            "complaint_id": "AICTE-2026-GRV-84920",
+            "kind": "system",
+            "sender_role": "system",
+            "sender_name": "AICTE Settlement Gateway",
+            "content": "UPDATE: DTU has uploaded the Action Taken Report (ATR) along with NEFT UTR number SBIN202609148201 for ₹44,000. Please verify the OTP to close the case.",
+            "timestamp": "Today at 11:32 AM",
+            "read_by_officer": True,
+            "read_by_complainant": True
+        }
+    ]
+}

@@ -3,7 +3,7 @@
 # ==========================================================================
 
 from pydantic import BaseModel, EmailStr
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Literal
 
 class SendOtpRequest(BaseModel):
     identifier: str  # Mobile number or Email
@@ -55,9 +55,22 @@ class EscalateRequest(BaseModel):
     case_id: str
     dissatisfied_reason: str
 
+class DocumentRequestIn(BaseModel):
+    items: List[str]
+    note: Optional[str] = None
+    due_date: Optional[str] = None
+
 class ChatMessageRequest(BaseModel):
-    case_id: str
-    sender_role: str
+    sender_role: Literal["complainant", "officer"]
     sender_name: str
     content: str
-    attachment_name: Optional[str] = None
+    kind: Literal["text", "clarification", "document_request"] = "text"
+    document_request: Optional[DocumentRequestIn] = None
+    attachments: List[EvidenceUploadItem] = []
+
+class MarkReadRequest(BaseModel):
+    reader_role: Literal["officer", "complainant"]
+
+class FulfillDocumentRequest(BaseModel):
+    sender_name: str
+    attachments: List[EvidenceUploadItem]

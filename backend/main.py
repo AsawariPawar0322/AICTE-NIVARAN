@@ -4,11 +4,11 @@
 
 from fastapi import FastAPI, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Literal
 import datetime
 import random
 
-from app.database import mock_institutions, mock_grievances, mock_otp_sessions
+from app.database import mock_institutions, mock_grievances, mock_otp_sessions, mock_messages
 from app.schemas import (
     SendOtpRequest,
     VerifyOtpRequest,
@@ -16,7 +16,9 @@ from app.schemas import (
     CreateGrievanceRequest,
     VerifyClosureOtpRequest,
     EscalateRequest,
-    ChatMessageRequest
+    ChatMessageRequest,
+    MarkReadRequest,
+    FulfillDocumentRequest
 )
 
 app = FastAPI(
@@ -204,6 +206,17 @@ def create_grievance(req: CreateGrievanceRequest):
         "related_case_count": 3 if req.link_to_related else 0
     }
     mock_grievances.insert(0, new_grievance)
+    mock_messages[case_id] = [{
+        "id": f"msg-{int(datetime.datetime.now().timestamp() * 1000)}",
+        "complaint_id": case_id,
+        "kind": "system",
+        "sender_role": "system",
+        "sender_name": "AICTE Grievance System",
+        "content": f"Conversation opened for case {case_id}. All messages in this thread are logged into the official case audit trail.",
+        "timestamp": "Just now",
+        "read_by_officer": True,
+        "read_by_complainant": True
+    }]
     return {
         "success": True,
         "case_id": case_id,
@@ -294,3 +307,181 @@ def get_institutions(search: Optional[str] = None):
         inst for inst in mock_institutions 
         if q in inst["name"].lower() or q in inst["permanent_id"].lower() or q in inst["city"].lower()
     ]
+
+# ==========================================================================
+# Support Inbox & Case Conversations
+# ==========================================================================
+
+def _find_grievance(case_id: str) -> Dict[str, Any]:
+    for g in mock_grievances:
+        if g["id"].lower() == case_id.lower():
+            return g
+    raise HTTPException(status_code=404, detail="Case not found")
+
+def _new_id(prefix: str) -> str:
+    return f"{prefix}-{int(datetime.datetime.now().timestamp() * 1000)}-{random.randint(100, 999)}"
+
+def _add_timeline_event(case: Dict[str, Any], title: str, description: str, actor: str, role: str):
+    case["timeline"].append({
+        "id": _new_id("t"),
+        "title": title,
+        "description": description,
+        "actor": actor,
+        "role": role,
+        "timestamp": "Just now",
+        "stage": case["current_stage"]
+    })
+
+@app.get("/api/inbox")
+def get_inbox(
+    filter: Literal["all", "unread", "awaiting", "docs_pending"] = "all",
+    search: Optional[str] = None
+):
+    summaries = []
+    for g in mock_grievances:
+        thread = mock_messages.get(g["id"], [])
+        from_parties = [m for m in thread if m["sender_role"] != "system"]
+        last = thread[-1] if thread else None
+        summaries.append({
+            "case_id": g["id"],
+            "title": g["title"],
+            "complainant_name": g["complainant_name"],
+            "institution_name": g["institution_name"],
+            "current_stage": g["current_stage"],
+            "sla_hours_remaining": g["sla_hours_remaining"],
+            "last_message": last["content"] if last else None,
+            "last_message_at": last["timestamp"] if last else None,
+            "unread_for_officer": sum(1 for m in thread if not m["read_by_officer"]),
+            "awaiting_reply": bool(from_parties) and from_parties[-1]["sender_role"] == "complainant",
+            "pending_requests": sum(
+                1 for m in thread
+                if m.get("document_request") and m["document_request"]["status"] == "pending"
+            )
+        })
+
+    if filter == "unread":
+        summaries = [s for s in summaries if s["unread_for_officer"] > 0]
+    elif filter == "awaiting":
+        summaries = [s for s in summaries if s["awaiting_reply"]]
+    elif filter == "docs_pending":
+        summaries = [s for s in summaries if s["pending_requests"] > 0]
+
+    if search:
+        q = search.lower()
+        summaries = [
+            s for s in summaries
+            if q in s["case_id"].lower() or q in s["complainant_name"].lower() or q in s["institution_name"].lower()
+        ]
+
+    # Unread first, then conversations waiting on the officer
+    summaries.sort(key=lambda s: (s["unread_for_officer"] == 0, not s["awaiting_reply"]))
+    return summaries
+
+@app.get("/api/grievances/{case_id}/messages")
+def get_messages(case_id: str):
+    case = _find_grievance(case_id)
+    return mock_messages.get(case["id"], [])
+
+@app.post("/api/grievances/{case_id}/messages")
+def send_message(case_id: str, req: ChatMessageRequest):
+    case = _find_grievance(case_id)
+    if req.kind == "document_request":
+        if req.sender_role != "officer":
+            raise HTTPException(status_code=403, detail="Only officers can request documents.")
+        if not req.document_request or not req.document_request.items:
+            raise HTTPException(status_code=400, detail="document_request with at least one item is required.")
+    if req.kind == "clarification" and req.sender_role != "officer":
+        raise HTTPException(status_code=403, detail="Only officers can issue clarifications.")
+
+    is_officer = req.sender_role == "officer"
+    message: Dict[str, Any] = {
+        "id": _new_id("msg"),
+        "complaint_id": case["id"],
+        "kind": req.kind,
+        "sender_role": req.sender_role,
+        "sender_name": req.sender_name,
+        "content": req.content,
+        "timestamp": "Just now",
+        "attachments": [a.model_dump() for a in req.attachments],
+        "is_official_note": req.kind == "clarification",
+        "read_by_officer": is_officer,
+        "read_by_complainant": not is_officer
+    }
+
+    if req.kind == "document_request":
+        message["document_request"] = {
+            "id": _new_id("docreq"),
+            "items": req.document_request.items,
+            "note": req.document_request.note,
+            "due_date": req.document_request.due_date,
+            "status": "pending"
+        }
+        due = f" · Due by {req.document_request.due_date}" if req.document_request.due_date else ""
+        _add_timeline_event(case, "Documents Requested from Complainant",
+                            f"Requested: {', '.join(req.document_request.items)}{due}.",
+                            req.sender_name, "AICTE Officer")
+    elif req.kind == "clarification":
+        _add_timeline_event(case, "Clarification Issued to Complainant",
+                            req.content if len(req.content) <= 160 else req.content[:157] + "...",
+                            req.sender_name, "AICTE Officer")
+
+    if req.attachments:
+        case["evidence_list"].extend(a.model_dump() for a in req.attachments)
+        _add_timeline_event(case, "Supplementary Evidence Shared via Case Conversation",
+                            f"{len(req.attachments)} file(s) shared with SHA-256 digests: {', '.join(a.name for a in req.attachments)}.",
+                            req.sender_name, "AICTE Officer" if is_officer else "Complainant")
+
+    mock_messages.setdefault(case["id"], []).append(message)
+    return {"success": True, "message": message}
+
+@app.post("/api/grievances/{case_id}/messages/read")
+def mark_messages_read(case_id: str, req: MarkReadRequest):
+    case = _find_grievance(case_id)
+    flag = "read_by_officer" if req.reader_role == "officer" else "read_by_complainant"
+    updated = 0
+    for m in mock_messages.get(case["id"], []):
+        if not m[flag]:
+            m[flag] = True
+            updated += 1
+    return {"success": True, "marked_read": updated}
+
+@app.post("/api/grievances/{case_id}/document-requests/{request_id}/fulfill")
+def fulfill_document_request(case_id: str, request_id: str, req: FulfillDocumentRequest):
+    case = _find_grievance(case_id)
+    thread = mock_messages.get(case["id"], [])
+    request_msg = next(
+        (m for m in thread if m.get("document_request") and m["document_request"]["id"] == request_id),
+        None
+    )
+    if not request_msg:
+        raise HTTPException(status_code=404, detail="Document request not found")
+    doc_request = request_msg["document_request"]
+    if doc_request["status"] == "fulfilled":
+        raise HTTPException(status_code=409, detail="Document request already fulfilled")
+    if not req.attachments:
+        raise HTTPException(status_code=400, detail="At least one attachment is required.")
+
+    files = [a.model_dump() for a in req.attachments]
+    doc_request["status"] = "fulfilled"
+    doc_request["fulfilled_at"] = "Just now"
+    doc_request["fulfilled_file_ids"] = [f["id"] for f in files]
+
+    submission = {
+        "id": _new_id("msg"),
+        "complaint_id": case["id"],
+        "kind": "document_submission",
+        "sender_role": "complainant",
+        "sender_name": req.sender_name,
+        "content": f"Submitted {len(files)} document(s) for: {', '.join(doc_request['items'])}.",
+        "timestamp": "Just now",
+        "attachments": files,
+        "reply_to_request_id": request_id,
+        "read_by_officer": False,
+        "read_by_complainant": True
+    }
+    thread.append(submission)
+    case["evidence_list"].extend(files)
+    _add_timeline_event(case, "Requested Documents Submitted by Complainant",
+                        f"{len(files)} file(s) uploaded with SHA-256 digests in response to the request for: {', '.join(doc_request['items'])}.",
+                        req.sender_name, "Complainant")
+    return {"success": True, "message": submission, "document_request": doc_request}
