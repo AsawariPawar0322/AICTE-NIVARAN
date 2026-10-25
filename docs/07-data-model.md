@@ -12,7 +12,9 @@ erDiagram
     COMPLAINT ||--o| RESOLUTION_PROPOSAL : "resolutionProposedDetails"
     COMPLAINT ||--o| OTP_VERIFICATION : "otpVerification"
     COMPLAINT ||--|| ASSIGNED_OFFICER : "assignedOfficer"
-    COMPLAINT ||--o{ CHAT_MESSAGE : "intended; currently one global list"
+    COMPLAINT ||--o{ CHAT_MESSAGE : "conversations[complaintId]"
+    CHAT_MESSAGE ||--o| DOCUMENT_REQUEST : "documentRequest"
+    CHAT_MESSAGE ||--o{ EVIDENCE_FILE : "attachments (also copied to evidenceList)"
 ```
 
 Relations are by embedding (nested objects/arrays) or by matching strings; there are no foreign keys. Related complaints are represented only by a count (`relatedCaseCount`), not by links to other IDs.
@@ -77,8 +79,32 @@ Relations are by embedding (nested objects/arrays) or by matching strings; there
 ### `Institution`
 `id, permanentId, name, state, city, category ('Technical' | 'Management' | 'Pharmacy' | 'Architecture'), openCasesCount, complianceRating`
 
-### `UserAdminMessage`
-`id, senderRole ('complainant' | 'officer' | 'system'), senderName, senderAvatar?, content, timestamp, attachmentName?, isOfficialNote?`
+### `NewTimelineEvent`
+`Omit<TimelineEvent, 'id' | 'timestamp' | 'stage'> & { stage?: StageKey }` — what views pass to `App` handlers; `App.withTimelineEvent` fills `id`, `timestamp: 'Just now'`, and `stage` (defaults to the complaint's current stage).
+
+### `UserAdminMessage` (case conversation message)
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | string | |
+| `complaintId` | string | Links the message to its complaint |
+| `kind` | `MessageKind` | `text` \| `clarification` \| `document_request` \| `document_submission` \| `system` |
+| `senderRole` | `'complainant' \| 'officer' \| 'system'` | |
+| `senderName` | string | Plain name; the UI adds "(You)" for own messages |
+| `senderAvatar?`, `attachmentName?` | string | Legacy, unused |
+| `content` | string | |
+| `timestamp` | string | Display string |
+| `attachments?` | `EvidenceFile[]` | Also appended to the complaint's `evidenceList` |
+| `documentRequest?` | `DocumentRequest` | Only for `document_request` |
+| `replyToRequestId?` | string | Only for `document_submission` |
+| `isOfficialNote?` | boolean | Shown as "Official Remark" (also implied by `kind: 'clarification'`) |
+| `readByOfficer`, `readByComplainant` | boolean | Sender's own flag starts `true` |
+
+### `DocumentRequest`
+`id, items: string[], note?, dueDate? (display string, e.g. "28 Oct 2026"), status ('pending' | 'fulfilled'), fulfilledAt?, fulfilledFileIds?`
+
+### `ConversationMap`, `ConversationReader`
+`ConversationMap = Record<complaintId, UserAdminMessage[]>`; `ConversationReader = 'officer' | 'complainant'`.
 
 ### Discord types
 - `DiscordServer`: `id, name, iconText, unreadCount?, category`
@@ -87,7 +113,7 @@ Relations are by embedding (nested objects/arrays) or by matching strings; there
 - `DiscordMember`: `id, name, roleTag, roleColor, isOnline, statusText?`
 
 ### Other UI types
-- `ActiveTab` (in `components/Navbar.tsx`): `'home' | 'dashboard' | 'file-complaint' | 'track' | 'chat' | 'discord' | 'login'`
+- `ActiveTab` (in `components/Navbar.tsx`): `'home' | 'dashboard' | 'file-complaint' | 'track' | 'chat' | 'discord' | 'login' | 'admin-inbox'`
 - `Language` (in `locales/translations.ts`): `'en' | 'hi'`
 - Current user (inline type in `App.tsx`): `{ name, role, institution?, rollOrId?, mobile? }`
 
@@ -113,17 +139,19 @@ Same shape as `Complaint`, in snake_case:
 
 Backend institution: `id, permanent_id, name, city, state, category, open_cases_count, compliance_rating`.
 
+Backend message (in `mock_messages[case_id]`) ↔ frontend `UserAdminMessage`: `complaint_id`↔`complaintId`, `sender_role`/`sender_name`↔`senderRole`/`senderName`, `document_request.{due_date, fulfilled_at, fulfilled_file_ids}`↔`documentRequest.{dueDate, fulfilledAt, fulfilledFileIds}`, `reply_to_request_id`↔`replyToRequestId`, `is_official_note`↔`isOfficialNote`, `read_by_officer`/`read_by_complainant`↔`readByOfficer`/`readByComplainant`. `kind` values are identical.
+
 Differences to resolve during integration:
 - Anonymous name: FE uses "Confidential Complainant", BE uses "Anonymous Whistleblower".
 - FE complainant role becomes `'Anonymous'` when anonymous; BE keeps the submitted role.
 - Officer bureau string: FE seed "AICTE Head Office, New Delhi" vs new-case "AICTE HQ New Delhi" (both sides use both).
-- BE seed has 1 grievance; FE seed has 3.
+- BE seed has 1 grievance and 1 conversation; FE seed has 3 of each.
 
 A simple approach is either a camel↔snake converter in the frontend API client, or Pydantic response models with `alias_generator=to_camel` and `populate_by_name=True` on the backend.
 
 ## Seed data summary
 
-See [CONTEXT.md §5](CONTEXT.md#5-fixed-demo-data-do-not-need-to-search-for-these) for the full table of institutions, complaints, users, and OTPs.
+See [CONTEXT.md §5](CONTEXT.md#5-fixed-demo-data-do-not-need-to-search-for-these) for the full table of institutions, complaints, conversations, users, and OTPs.
 
 The flagship demo case **`AICTE-2026-GRV-84920`** (identical on FE and BE): Aarav Sharma (Student, DTU) surrendered his seat on 14 Aug 2026 before the cutoff; the college deducted ₹45,000 against the AICTE refund rule capping processing fees at ₹1,000. Timeline: registered (16 Aug) → allotted to PGRC (16 Aug) → notice served (18 Aug) → ATR with ₹44,000 refund, UTR `SBIN202609148201`, order `DTU/ACAD/REFUND/2026/894-B` (24 Oct) → pending OTP (24 Oct). Two evidence files. Related cases: 3. OTP `849210`.
 
@@ -145,7 +173,11 @@ resolution_proposals(id PK, grievance_id FK, atr_summary, remedy, refund_amount,
 closure_verifications(grievance_id PK FK, otp_hash, verified_at, feedback, rating)
 case_links(id PK, grievance_id FK, related_grievance_id FK, score, reasons JSONB,
            status ('suggested'|'confirmed'|'rejected'), reviewed_by FK, reviewed_at)
-messages(id PK, grievance_id FK, sender_id FK, sender_role, content, attachment_key, created_at)
+messages(id PK, grievance_id FK, kind, sender_id FK, sender_role, content,
+         read_by_officer_at, read_by_complainant_at, created_at)
+message_attachments(message_id FK, evidence_file_id FK)
+document_requests(id PK, grievance_id FK, message_id FK, items JSONB, note, due_date,
+                  status ('pending'|'fulfilled'), fulfilled_at)
 ```
 
 `case_links` turns the related-case count into real, reviewable relationships; `sla_due_at` turns the static SLA number into a real deadline that dashboards can query.

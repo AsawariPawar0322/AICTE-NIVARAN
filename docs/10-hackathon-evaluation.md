@@ -10,6 +10,7 @@ Material for presenting AICTE NIVARAN to SIH evaluators: how the project answers
 | Detect potential overlap between complaints | Related Case Finder at filing time; "link to existing complaint" | UI flow done; matching logic simulated |
 | Responsibility tracking | Assigned officer card, actor and role on every timeline event | Done (display) |
 | Coordinated action across Bureaus/Cells | Joint hearing queue via case linking; category → cell routing | Concept + UI; no official workflow yet |
+| Officials communicate with complainants on the record | Support Inbox: replies, document requests, clarifications, all linked to the complaint and written to its timeline; uploads added to evidence | Done (frontend, in memory); backend routes exist |
 | Deadline visibility | SLA hours on each case; 72 h on registration | Static value; no live deadline engine |
 | Institution-wise and department-wise reporting | Planned official dashboard and reports | Not built |
 | Accountable closure | Citizen OTP gate; escalation to Ombudsman | Done (logic), OTP simulated |
@@ -19,7 +20,8 @@ Material for presenting AICTE NIVARAN to SIH evaluators: how the project answers
 ### Novelty / innovation
 - **Link to existing complaint**: converts many isolated complaints against one institution into one coordinated case cluster, while each complainant's identity stays separate.
 - **Citizen-owned closure**: an institution's resolution only counts after the complainant's OTP; rejection escalates automatically.
-- **Evidence integrity**: hash shown for every proof file.
+- **Evidence integrity**: hash shown for every proof file (real SHA-256 for files uploaded in the case conversation).
+- **Case-linked communication**: the officer's Support Inbox and the complainant's chat share one thread per complaint; a document request becomes a card the complainant answers with an upload, and the files land in the case evidence and timeline automatically.
 
 ### Feasibility / technical approach
 - Standard, low-cost stack: React + TypeScript + Vite, FastAPI + Pydantic. Matching can start with PostgreSQL full-text search and trigram similarity before any ML.
@@ -42,7 +44,8 @@ Material for presenting AICTE NIVARAN to SIH evaluators: how the project answers
 
 ### Completeness of the prototype
 - Complainant journey is complete end to end in the UI.
-- Official side, persistence, and real matching are the main missing pieces. Say so openly.
+- Official side: the Support Inbox is complete; the triage dashboard, stage actions and reports are not.
+- Persistence and real matching are the main missing pieces. Say so openly.
 
 ## Pitch structure (3 minutes)
 
@@ -58,7 +61,9 @@ Material for presenting AICTE NIVARAN to SIH evaluators: how the project answers
 |---|---|
 | How does related-case matching work? | Today the UI flow is in place and the result is mocked. The planned approach: candidates = open cases with the same AICTE Permanent ID; score by category, text similarity (Postgres FTS + trigram), and date proximity; show reasons; an authorised official confirms each link. We will measure precision/recall on labelled examples before adding semantic models. |
 | Is the frontend connected to the backend? | Not yet. The backend API works on its own (Swagger at `/docs`); the demo runs on frontend mock data so it is reliable offline. Wiring is the next step and the endpoints map one-to-one. |
-| Is the SHA-256 real? | Currently a placeholder value. Real hashing with the browser's Web Crypto API is a few lines and is first on our list. |
+| Is the SHA-256 real? | For files uploaded in the case conversation, yes: they are hashed in the browser with Web Crypto. The filing wizard still shows a placeholder value; switching it to the same helper is next on our list. |
+| Is the officer chat real? | Yes, within the session: officials answer from the Support Inbox and the complainant sees it in their case chat (switch roles in the header to show both sides). There are no automatic replies. It is in-memory until the frontend is wired to the backend message routes. |
+| Who can see a conversation? | In the prototype, any official sees all conversations. Production would restrict each thread to the assigned bureau, with ICC cases visible only to ICC officers. |
 | How is OTP sent? | Simulated with a fixed demo code. Production would use an SMS gateway with hashed, expiring, rate-limited OTPs. |
 | What stops an official from closing a case? | Closure requires the complainant's OTP; dissatisfaction escalates to the Ombudsman, and every step is recorded on the timeline. |
 | What about anonymous complaints? | Supported: the name is masked. The OTP closure would then go to a contact the complainant chooses to keep private. |
@@ -71,7 +76,8 @@ Material for presenting AICTE NIVARAN to SIH evaluators: how the project answers
 ## Things not to claim
 
 Unless the corresponding item in [11-known-gaps-and-roadmap.md](11-known-gaps-and-roadmap.md) has been fixed, do not say:
-- that hashing is real SHA-256,
+- that hashing is real SHA-256 for the filing wizard (it is real only for chat uploads),
+- that messages are stored on a server or delivered by SMS/email,
 - that a "semantic matching engine" detects cases,
 - that the system is WCAG 2.1 AA / GIGW 3.0 compliant (the footer badge says so; it is a goal),
 - that OTPs are sent by SMS,
@@ -85,6 +91,6 @@ The root README already follows this rule ("should only be claimed as implemente
 - [ ] Deployed frontend URL works
 - [ ] `npm run build` passes
 - [ ] Backend starts and `/docs` loads
-- [ ] Demo script rehearsed within 6 minutes
+- [ ] Demo script rehearsed (about 7 minutes; shorter variant in [09](09-setup-and-demo.md))
 - [ ] Everyone on the team can answer the questions above
 - [ ] Status table in [01-project-overview.md](01-project-overview.md) matches the code

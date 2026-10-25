@@ -42,12 +42,13 @@ Open http://localhost:8000/docs for Swagger UI. Run uvicorn from inside `backend
 | Case awaiting OTP | `AICTE-2026-GRV-84920` |
 | Case under investigation | `AICTE-2026-GRV-79114` |
 | Resolved case | `AICTE-2026-GRV-65021` |
+| Conversation with 2 unread messages + a pending document request | `AICTE-2026-GRV-79114` (Pooja Kulkarni) |
 
-The Login tab has one-click "SIH Evaluator Quick-Logins" for all three personas.
+The Login tab has one-click "SIH Evaluator Quick-Logins" for all three personas. The "AICTE Official" quick-login opens the Support Inbox.
 
 Data resets on page reload, so you can repeat the demo.
 
-## Demo script (about 6 minutes)
+## Demo script (about 7 minutes)
 
 | Time | Screen | Do | Say |
 |---|---|---|---|
@@ -61,9 +62,14 @@ Data resets on page reload, so you can repeat the demo.
 | 3:30 | Track `…84920` | Show the 6-stage stepper and the institute's ATR (₹44,000 refund, UTR) | "The college says it is resolved. But it cannot close the case itself." |
 | 4:00 | Track | Enter `849210` → certificate | **Critical feature:** "Only the complainant's OTP closes the case." |
 | 4:30 | Track (reload, then `…84920` again) | Instead click "Reject & Escalate to Ombudsman", enter a reason, confirm | "Rejection goes straight to the State Technical Ombudsman, on the record." |
-| 5:00 | Chat | Send a message, wait for the officer reply | "Case-linked communication, no email chains." |
-| 5:20 | Discord | Type `/status` | "Community hub with bot lookups for students who need peer help." |
-| 5:40 | Login | Show evaluator quick-logins and the official track | Close on roadmap: official dashboard, real matching, database. |
+| 5:00 | Header → **AICTE Official** | Navbar shows **Support Inbox (2)**. Open **Pooja Kulkarni · 79114**: unread messages, pending document request, case panel on the right | "Officials see every complainant conversation next to the case it belongs to." |
+| 5:20 | Inbox composer | **Clarification**: "PFMS freeze is on the institute's side; nodal officer notified." Then **Request documents**: tick *Fee payment receipt*, send | "Clarifications and document requests go on the official record." |
+| 5:40 | Header → **Complainant**, **Official Chatbox** | The same case opens; upload any file on the request card → it shows *Submitted* | "Uploads are SHA-256 hashed in the browser and attached to the case." |
+| 6:00 | Header → **AICTE Official** → **Open full case** | Tracker shows the new evidence file and the timeline events | "Every message, request and upload is attached to the complaint and its audit trail — nothing lives in personal email." |
+| 6:20 | Discord | Type `/status` | "Community hub with bot lookups for students who need peer help." |
+| 6:40 | Login | Show evaluator quick-logins | Close on roadmap: official triage dashboard, real matching, database. |
+
+This runs about 7 minutes; for a 5-minute slot, drop the escalation step (4:30) and Discord.
 
 ## Before presenting
 
@@ -80,3 +86,6 @@ Data resets on page reload, so you can repeat the demo.
 | `ModuleNotFoundError: app` when starting backend | Run `uvicorn` from inside `backend/` |
 | `fastapi.testclient` raises a missing `httpx` error | `pip install httpx`, or test with `curl` |
 | Chat tab shows nothing | A complaint must be selected; open chat from the dashboard or tracker |
+| No Chatbox / File a Complaint tab | You are in official mode; switch the header pill to **Complainant** |
+| Upload fails with "secure context" | Web Crypto needs https or `localhost`; don't open the dev server via a LAN IP |
+| Officer replies don't appear by themselves | Expected: there are no automatic replies; answer from the Support Inbox |

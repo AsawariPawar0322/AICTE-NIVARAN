@@ -25,8 +25,8 @@ flowchart LR
     subgraph Browser["Browser — frontend/ (React SPA)"]
         App["App.tsx<br/>global state + tab switch"]
         Mock["data/mockData.ts<br/>seed data"]
-        Views["views/*<br/>7 screens"]
-        Comp["components/<br/>HeaderStrip, Navbar"]
+        Views["views/*<br/>8 screens"]
+        Comp["components/<br/>HeaderStrip, Navbar,<br/>chat/MessageThread"]
         I18n["locales/translations.ts"]
         Mock --> App
         App --> Comp
@@ -35,7 +35,7 @@ flowchart LR
         I18n --> Views
     end
     subgraph Server["backend/ (FastAPI)"]
-        Main["main.py<br/>9 routes"]
+        Main["main.py<br/>14 routes"]
         Schemas["app/schemas.py<br/>Pydantic models"]
         DB["app/database.py<br/>in-memory seed data"]
         Schemas --> Main
@@ -73,14 +73,18 @@ flowchart LR
 | `lang` | `'en' \| 'hi'` | `'en'` | every component |
 | `fontScale` | number | `1.0` | HeaderStrip → `--font-scale` on `<html>` |
 | `highContrast` | boolean | `false` | HeaderStrip → `data-high-contrast` on `<html>` |
-| `activeRole` | `'complainant' \| 'official'` | `'complainant'` | HeaderStrip, set by LoginView |
+| `activeRole` | `'complainant' \| 'official'` | `'complainant'` | HeaderStrip (via `handleSwitchRole`), LoginView, Navbar (which tabs show) |
 | `activeTab` | `ActiveTab` | `'dashboard'` | Navbar, all views (navigation) |
-| `currentUser` | profile or `null` | Aarav Sharma | HeaderStrip, set by LoginView |
+| `currentUser` | profile or `null` | Aarav Sharma | HeaderStrip, set by LoginView; gives `officialName` for inbox messages |
 | `institutions` | `Institution[]` | `mockInstitutions` | LandingPage, FileComplaintView |
-| `complaints` | `Complaint[]` | `initialComplaints` | Dashboard, Track, Navbar badge |
-| `selectedComplaint` | `Complaint \| null` | first complaint | Track, Chat |
+| `complaints` | `Complaint[]` | `initialComplaints` | Dashboard, Track, Inbox, Navbar badge |
+| `selectedComplaintId` | `string \| null` | first complaint's id | Track, Chat, Inbox (shared selection); `selectedComplaint` is derived from it |
 | `selectedInstForComplaint` | `Institution \| null` | `null` | LandingPage → FileComplaintView |
-| `chatMessages` | `UserAdminMessage[]` | `initialChatMessages` | Chat |
+| `conversations` | `ConversationMap` (complaint id → messages) | `initialConversations` | Chat, Inbox, Navbar unread badges |
+
+Derived values: `selectedComplaint`, `pendingOtpCount`, `officerUnreadCount`, `complainantUnreadCount`, `officialName`.
+
+Storing the selection as an id (not an object copy) means every view reads the latest version of the complaint, so timeline events and evidence added from the inbox or chat show up in the tracker immediately.
 
 ### Routing
 
@@ -95,6 +99,9 @@ There is no URL routing. `activeTab` selects which view renders inside `<main>`:
 | `chat` | `UserAdminChatView` (only if `selectedComplaint` is set) |
 | `discord` | `DiscordReplicaView` |
 | `login` | `LoginView` |
+| `admin-inbox` | `AdminInboxView` (Support Inbox) |
+
+The navbar is role-aware: in **official** mode it shows *Support Inbox* (with an unread badge) instead of *File a Complaint* and *Official Chatbox*; in **complainant** mode the Chatbox tab shows the complainant's unread count. Switching to official opens the inbox; switching back from the inbox opens the dashboard.
 
 Because each view unmounts when the tab changes, its local state (wizard step, typed text) resets.
 
@@ -112,7 +119,9 @@ Because each view unmounts when the tab changes, its local state (wizard step, t
 
 1. `tokens.css` — CSS custom properties on `:root`: brand colours (AICTE orange `#F2895E`, action `#C2570C`, navy `#0B2A5B`, blue `#1F5FBF`), neutrals, status pairs, spacing, radius, `--font-scale`. Also the `[data-high-contrast="true"]` override.
 2. `index.css` — imports tokens; base `html/body`, skip-link, `.container`, `.btn*`, `.status-chip`/`.chip-*`, `.card`, `.input-*`, and Tailwind-like utilities (`flex`, `gap-N`, `grid-cols-N`), with a 768 px breakpoint that collapses grids.
-3. Each component ends with an inline `<style>{`...`}</style>` block holding its own class rules.
+3. Each component ends with an inline `<style>{`...`}</style>` block holding its own class rules. These rules are global while the component is mounted, so new components prefix their selectors (e.g. `.inbox-page-container .btn-sm`).
+
+Gotcha: some class names used in markup (`flex-wrap`, `items-end`, `btn-sm`) are not defined in `index.css`; they only work where a mounted component defines them.
 
 `App.css` is a leftover from the Vite template and is not imported.
 
@@ -122,7 +131,7 @@ Because each view unmounts when the tab changes, its local state (wizard step, t
 
 ## Backend architecture
 
-- `main.py` creates `FastAPI(title="AICTE NIVARAN API", version="1.0.0")`, enables CORS for all origins, and defines every route directly (no routers).
+- `main.py` creates `FastAPI(title="AICTE NIVARAN API", version="1.0.0")`, enables CORS for all origins, and defines every route directly (no routers). Helpers `_find_grievance`, `_new_id`, `_add_timeline_event` serve the inbox/message routes.
 - `app/schemas.py` holds the Pydantic request bodies. Responses are plain dicts.
 - `app/database.py` holds module-level lists/dicts that routes read and mutate. A restart resets everything.
 - Swagger UI is served at `/docs` (FastAPI default).

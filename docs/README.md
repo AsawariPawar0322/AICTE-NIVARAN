@@ -28,7 +28,7 @@ Documentation for the AICTE NIVARAN prototype (Smart India Hackathon 2026, probl
 | 09 | [setup-and-demo](09-setup-and-demo.md) | Run locally, demo credentials, a timed demo script for judges |
 | 10 | [hackathon-evaluation](10-hackathon-evaluation.md) | Mapping to evaluation criteria, pitch points, likely judge questions and answers |
 | 11 | [known-gaps-and-roadmap](11-known-gaps-and-roadmap.md) | Known bugs, tech debt, unused files, roadmap |
-| 12 | [admin-support-inbox](12-admin-support-inbox.md) | Plan: admin Messages / Support Inbox linked to complaints (planned) |
+| 12 | [admin-support-inbox](12-admin-support-inbox.md) | Admin Messages / Support Inbox: requirements, design, steps, and what was built |
 | — | [CHANGELOG.md](CHANGELOG.md) | Log of documentation updates tied to code changes |
 
 ## Keeping these docs current

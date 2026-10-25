@@ -1,6 +1,15 @@
 imp# 12 · Admin Panel: Messages / Support Inbox (implementation plan)
 
-**Status:** Planned, not started. Update this file and tick the checkboxes as work lands.
+**Status:** Implemented on 2026-10-25 (steps 1–6 and 8). Step 7 (frontend calling the backend routes) waits for plan Phase 2. Verified with a headless-browser run of the demo flow (41 checks) and curl against every new route.
+
+**Differences from the original design**
+- Selection is stored as `selectedComplaintId` in `App` (not an object), so the tracker, chat and inbox always show live data. This also fixed gaps B1 and B2.
+- `appendTimelineEvent` became the module helper `withTimelineEvent` plus `NewTimelineEvent` in `types/index.ts`; `handleUpdateComplaintStage` takes an optional event.
+- Bubbles and request cards live in one shared component, `components/chat/MessageThread.tsx` (instead of separate `MessageBubble` / `DocumentRequestCard` files).
+- Hashing helper is `lib/evidence.ts` (real SHA-256); the filing wizard still uses its old random hash.
+- Inbox, chat and tracker share one selection, so the case chosen in the inbox is also the one opened in the complainant chat.
+- Officer messages use the logged-in official's name when one is signed in, otherwise the case's assigned officer.
+- Backend `ChatMessageRequest.kind` excludes `document_submission` (submissions only go through the fulfil route); complainants get 403 for clarifications and document requests.
 
 ## 1. Requirements
 
@@ -209,42 +218,42 @@ flowchart LR
 Each step should leave the app building (`npm run build`) and demoable.
 
 ### Step 1 · Link messages to complaints (foundation)
-- [ ] Add `MessageKind`, `DocumentRequest`, new `UserAdminMessage` fields, `ConversationMap` to `types/index.ts`.
-- [ ] Convert `initialChatMessages` → `initialConversations` with three threads (§3.6).
-- [ ] In `App.tsx`: `conversations` state, `handleSendMessage(complaintId, msg)`, `handleMarkThreadRead`, `appendTimelineEvent`.
-- [ ] Update `UserAdminChatView` to read `conversations[complaint.id]` and send with `complaintId`.
+- [x] Add `MessageKind`, `DocumentRequest`, new `UserAdminMessage` fields, `ConversationMap` to `types/index.ts`.
+- [x] Convert `initialChatMessages` → `initialConversations` with three threads (§3.6).
+- [x] In `App.tsx`: `conversations` state, `handleSendMessage(complaintId, msg)`, `handleMarkThreadRead`, `appendTimelineEvent`.
+- [x] Update `UserAdminChatView` to read `conversations[complaint.id]` and send with `complaintId`.
 - **Done when:** each complaint's chat shows only its own messages; build passes. Fixes gap B7.
 
 ### Step 2 · Admin inbox list + thread (R1, R2)
-- [ ] Add `'admin-inbox'` to `ActiveTab`; render branch in `App.tsx`.
-- [ ] Create `views/AdminInboxView.tsx`: conversation list with filters/search, thread pane, complaint panel, "Open full case".
-- [ ] Mark thread read on open; compute `officerUnreadCount`.
+- [x] Add `'admin-inbox'` to `ActiveTab`; render branch in `App.tsx`.
+- [x] Create `views/AdminInboxView.tsx`: conversation list with filters/search, thread pane, complaint panel, "Open full case".
+- [x] Mark thread read on open; compute `officerUnreadCount`.
 - **Done when:** an official sees 3 conversations, 79114 shows 2 unread, opening it clears the count, "Open full case" shows that case in the tracker.
 
 ### Step 3 · Composer modes (R3)
-- [ ] Reply mode (text + quick templates).
-- [ ] Clarification mode → `clarification` message + timeline event.
-- [ ] Request documents mode → `document_request` message with checklist/note/due date + timeline event.
+- [x] Reply mode (text + quick templates).
+- [x] Clarification mode → `clarification` message + timeline event.
+- [x] Request documents mode → `document_request` message with checklist/note/due date + timeline event.
 - **Done when:** each mode produces the right message type, visible to the complainant, and the tracker timeline shows the request/clarification.
 
 ### Step 4 · Complainant fulfils requests (R3, R4)
-- [ ] Render request cards in `UserAdminChatView` with an upload button.
-- [ ] `handleFulfillDocumentRequest`: submission message, request → fulfilled, files → `evidenceList`, timeline event.
-- [ ] Replace the paperclip `alert` with a real file picker.
-- [ ] Remove the simulated officer auto-reply.
+- [x] Render request cards in `UserAdminChatView` with an upload button.
+- [x] `handleFulfillDocumentRequest`: submission message, request → fulfilled, files → `evidenceList`, timeline event.
+- [x] Replace the paperclip `alert` with a real file picker.
+- [x] Remove the simulated officer auto-reply.
 - **Done when:** uploading on a pending request flips it to fulfilled in both views, and the file appears in the tracker's "Stored Proofs".
 
 ### Step 5 · Role-aware navigation
-- [ ] Navbar: role-specific tabs and unread badges.
-- [ ] HeaderStrip: switching to official opens the inbox (no `alert`).
-- [ ] LoginView: officer logins land on the inbox.
-- [ ] Translations for all new strings (§3.7).
+- [x] Navbar: role-specific tabs and unread badges.
+- [x] HeaderStrip: switching to official opens the inbox (no `alert`).
+- [x] LoginView: officer logins land on the inbox.
+- [x] Translations for all new strings (§3.7).
 - **Done when:** switching the role pill changes the tabs; badges update live as messages are sent from the other side.
 
 ### Step 6 · Backend endpoints
-- [ ] `mock_messages` seed data matching the frontend threads.
-- [ ] Schemas (§3.8) and 5 routes.
-- [ ] Verify each route with `curl` (commands added to [06](06-api-reference.md)).
+- [x] `mock_messages` seed data matching the frontend threads (only the 84920 thread, because the backend seed has only that grievance).
+- [x] Schemas (§3.8) and 5 routes.
+- [x] Verify each route with `curl` (commands added to [06](06-api-reference.md)).
 - **Done when:** every route returns the documented shape; fulfilling twice returns 409.
 
 ### Step 7 · Integrate (with plan Phase 2)
@@ -252,7 +261,7 @@ Each step should leave the app building (`npm run build`) and demoable.
 - [ ] Inbox and chat load from the API when available, falling back to local state.
 
 ### Step 8 · Docs
-- [ ] Update `CONTEXT.md`, `03-features.md` (new feature F16 Support Inbox; F11 chat no longer simulated), `04-feature-relationships.md`, `05-file-reference.md`, `06-api-reference.md`, `07-data-model.md`, status table in `01-project-overview.md`, remove B7 from `11-known-gaps-and-roadmap.md`, demo script in `09-setup-and-demo.md`, `CHANGELOG.md`, and tick the boxes in this file.
+- [x] Update `CONTEXT.md`, `03-features.md` (new feature F16 Support Inbox; F11 chat no longer simulated), `04-feature-relationships.md`, `05-file-reference.md`, `06-api-reference.md`, `07-data-model.md`, status table in `01-project-overview.md`, remove B7 from `11-known-gaps-and-roadmap.md`, demo script in `09-setup-and-demo.md`, `CHANGELOG.md`, and tick the boxes in this file.
 
 Steps 1–5 are frontend only and give the full demo. Step 6 can be built in parallel by a second person.
 
@@ -288,16 +297,16 @@ Pitch line: "Every message, document request and upload is attached to the compl
 
 ## 8. Testing checklist
 
-- [ ] Each complaint's thread only shows its own messages, in both views.
-- [ ] Unread counts: increase when the other side sends, clear when the thread is opened, never negative.
+- [x] Each complaint's thread only shows its own messages, in both views.
+- [x] Unread counts: increase when the other side sends, clear when the thread is opened, never negative.
 - [ ] Anonymous complaints show a masked name in the inbox.
-- [ ] Request → fulfil → evidence and timeline updated; a second fulfil is blocked.
-- [ ] Switching roles mid-flow keeps all state.
-- [ ] Mobile layout (≤ 768 px): list → thread → back works.
+- [x] Request → fulfil → evidence and timeline updated; a second fulfil is blocked. (UI blocks a second upload; backend returns 409)
+- [x] Switching roles mid-flow keeps all state.
+- [x] Mobile layout (≤ 768 px): list → thread → back works.
 - [ ] Keyboard: tab through list, open with Enter, composer reachable; new messages announced via `aria-live="polite"`.
-- [ ] Hindi toggle covers all new strings.
-- [ ] `npm run build` and `npm run lint` pass.
-- [ ] Backend: all 5 routes return the documented shapes and errors.
+- [x] Hindi toggle covers all new strings. Hindi covers the new inbox/chat strings; some fixed English remains (stage labels, document types, quick replies).
+- [x] `npm run build` and `npm run lint` pass. Build passes; lint has warnings only (mostly pre-existing).
+- [x] Backend: all 5 routes return the documented shapes and errors.
 
 ## 9. Out of scope / later
 

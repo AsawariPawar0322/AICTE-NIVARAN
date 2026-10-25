@@ -23,6 +23,11 @@ FastAPI app in `backend/main.py`. Base URL in development: `http://localhost:800
 | POST | `/api/grievances/{case_id}/verify-closure-otp` | Complainant confirms resolution with OTP |
 | POST | `/api/grievances/{case_id}/escalate` | Complainant rejects resolution, escalates to Ombudsman |
 | GET | `/api/institutions` | List/search institutions |
+| GET | `/api/inbox` | Support Inbox: one summary per grievance conversation |
+| GET | `/api/grievances/{case_id}/messages` | Full conversation for a grievance |
+| POST | `/api/grievances/{case_id}/messages` | Send a message, clarification or document request |
+| POST | `/api/grievances/{case_id}/messages/read` | Mark a thread read for officer or complainant |
+| POST | `/api/grievances/{case_id}/document-requests/{request_id}/fulfill` | Complainant submits files for a document request |
 
 ---
 
@@ -111,7 +116,7 @@ Body (`CreateGrievanceRequest`):
 }
 ```
 
-Behaviour: ID `AICTE-2026-GRV-<random 10000–99999>`; stage `REGISTERED` / 1; SLA 72; assigned to Dr. Verma; one timeline event; `complainant_name` replaced by "Anonymous Whistleblower" when anonymous; `related_case_count` = 3 if `link_to_related` else 0. Inserted at the front of `mock_grievances`. `category` is a free string (not validated against the enum).
+Behaviour: ID `AICTE-2026-GRV-<random 10000–99999>`; stage `REGISTERED` / 1; SLA 72; assigned to Dr. Verma; one timeline event; `complainant_name` replaced by "Anonymous Whistleblower" when anonymous; `related_case_count` = 3 if `link_to_related` else 0. Inserted at the front of `mock_grievances`. A conversation is opened in `mock_messages` with one system message. `category` is a free string (not validated against the enum).
 
 Response: `{ "success": true, "case_id": "AICTE-2026-GRV-12345", "grievance": { ... } }`.
 
@@ -146,6 +151,82 @@ Query: `search` (optional) — case-insensitive substring of `name`, `permanent_
 
 Response: array of institution objects.
 
+---
+
+## Support Inbox and case conversations
+
+Messages are stored per grievance in `mock_messages[case_id]`. Message object:
+
+```json
+{
+  "id": "msg-1792921236173-138", "complaint_id": "AICTE-2026-GRV-84920",
+  "kind": "text | clarification | document_request | document_submission | system",
+  "sender_role": "complainant | officer | system", "sender_name": "Aarav Sharma",
+  "content": "...", "timestamp": "Just now",
+  "attachments": [ /* EvidenceUploadItem */ ],
+  "document_request": { "id": "docreq-…", "items": ["Bank statement"], "note": null,
+                        "due_date": "28 Oct 2026", "status": "pending | fulfilled",
+                        "fulfilled_at": "Just now", "fulfilled_file_ids": ["ev-9"] },
+  "reply_to_request_id": "docreq-…",
+  "is_official_note": false,
+  "read_by_officer": true, "read_by_complainant": false
+}
+```
+`document_request` appears only on `document_request` messages; `reply_to_request_id` only on `document_submission` messages. The sender's own read flag starts `true`.
+
+All routes below return **404** `"Case not found"` for an unknown `case_id`.
+
+### GET `/api/inbox`
+
+Query: `filter` = `all` (default) \| `unread` \| `awaiting` \| `docs_pending` (anything else → **422**); `search` (optional, substring of case ID, complainant name, or institution).
+
+Response: array sorted unread first, then awaiting reply:
+```json
+[{ "case_id": "AICTE-2026-GRV-84920", "title": "...", "complainant_name": "Aarav Sharma",
+   "institution_name": "Delhi Technological University (DTU)", "current_stage": "PENDING_OTP",
+   "sla_hours_remaining": 18, "last_message": "...", "last_message_at": "Today at 11:32 AM",
+   "unread_for_officer": 0, "awaiting_reply": false, "pending_requests": 0 }]
+```
+`awaiting_reply` is true when the last non-system message came from the complainant.
+
+### GET `/api/grievances/{case_id}/messages`
+
+Response: the message array for that grievance (empty if none).
+
+### POST `/api/grievances/{case_id}/messages`
+
+Body (`ChatMessageRequest`):
+```json
+{ "sender_role": "officer", "sender_name": "Dr. Ramesh Chandra Verma",
+  "content": "Please upload the documents listed below.",
+  "kind": "document_request",
+  "document_request": { "items": ["Bank statement"], "note": "PDF is fine", "due_date": "28 Oct 2026" },
+  "attachments": [] }
+```
+- `sender_role`: `complainant` \| `officer`. `kind`: `text` (default) \| `clarification` \| `document_request`.
+- `clarification` and `document_request` from a complainant → **403**.
+- `document_request` without `document_request.items` → **400**.
+- Side effects on the grievance: `document_request` → timeline "Documents Requested from Complainant"; `clarification` → timeline "Clarification Issued to Complainant" (`is_official_note: true`); any `attachments` → appended to `evidence_list` + timeline "Supplementary Evidence Shared via Case Conversation".
+
+Response: `{ "success": true, "message": { ... } }`.
+
+### POST `/api/grievances/{case_id}/messages/read`
+
+Body (`MarkReadRequest`): `{ "reader_role": "officer" }` (or `"complainant"`).
+Response: `{ "success": true, "marked_read": 1 }`.
+
+### POST `/api/grievances/{case_id}/document-requests/{request_id}/fulfill`
+
+Body (`FulfillDocumentRequest`):
+```json
+{ "sender_name": "Aarav Sharma",
+  "attachments": [{ "id": "ev-9", "name": "statement.pdf", "size": 1000,
+                    "type": "application/pdf", "sha256_hash": "<64 hex>" }] }
+```
+Errors: **404** unknown request; **409** already fulfilled; **400** no attachments.
+Effect: request → `fulfilled` (with `fulfilled_at`, `fulfilled_file_ids`); a `document_submission` message is added (unread for the officer); files appended to `evidence_list`; timeline "Requested Documents Submitted by Complainant".
+Response: `{ "success": true, "message": { ... }, "document_request": { ... } }`.
+
 ## Quick test with curl
 
 ```bash
@@ -155,6 +236,15 @@ curl -s "localhost:8000/api/institutions?search=pune"
 curl -s -X POST localhost:8000/api/auth/send-otp -H 'content-type: application/json' -d '{"identifier":"aarav"}'
 curl -s -X POST localhost:8000/api/grievances/AICTE-2026-GRV-84920/verify-closure-otp \
      -H 'content-type: application/json' -d '{"case_id":"AICTE-2026-GRV-84920","otp":"849210"}'
+
+# Support Inbox
+curl -s "localhost:8000/api/inbox?filter=unread"
+curl -s localhost:8000/api/grievances/AICTE-2026-GRV-84920/messages
+curl -s -X POST localhost:8000/api/grievances/AICTE-2026-GRV-84920/messages -H 'content-type: application/json' \
+     -d '{"sender_role":"officer","sender_name":"Dr. Verma","content":"Please upload","kind":"document_request","document_request":{"items":["Bank statement"]}}'
+curl -s -X POST localhost:8000/api/grievances/AICTE-2026-GRV-84920/messages/read -H 'content-type: application/json' -d '{"reader_role":"officer"}'
+curl -s -X POST localhost:8000/api/grievances/AICTE-2026-GRV-84920/document-requests/<request_id>/fulfill -H 'content-type: application/json' \
+     -d '{"sender_name":"Aarav Sharma","attachments":[{"id":"ev-9","name":"statement.pdf","size":1000,"type":"application/pdf","sha256_hash":"ab12"}]}'
 ```
 
-All of these were run successfully against the current code on 2026-10-25.
+All of these were run successfully against the current code on 2026-10-25, including the 400/403/404/409/422 error cases.

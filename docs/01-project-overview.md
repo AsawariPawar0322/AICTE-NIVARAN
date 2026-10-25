@@ -21,7 +21,7 @@
 4. **Citizen OTP closure.** A case cannot move to `RESOLVED` until the complainant enters a one-time code confirming satisfaction. If they are not satisfied, they escalate to the State Technical Ombudsman.
 5. **Evidence integrity.** Each uploaded proof file is shown with a SHA-256 digest so tampering can be detected.
 6. **Accessible, bilingual UI.** English/Hindi toggle, font scaling, high-contrast mode, government-portal visual language.
-7. **Communication channels.** A per-case chat with the assigned officer, and a Discord-style community hub for peer support and announcements.
+7. **Communication linked to the case.** Officials work from a Support Inbox; complainants chat from their case. Every message, document request and upload stays attached to the complaint and its audit trail. A Discord-style community hub covers peer support and announcements.
 
 ## Users and personas
 
@@ -32,7 +32,7 @@
 | Institute Nodal Officer | Prof. K. S. Rao, Registrar DTU | Submits Action Taken Reports (ATR) for their institution |
 | Guest | — | Tracks a case by ID without signing in |
 
-Only the complainant experience has dedicated screens today. Officials can sign in, but there is no separate official dashboard yet (see [11-known-gaps-and-roadmap.md](11-known-gaps-and-roadmap.md)).
+The complainant journey is complete. On the official side, the **Support Inbox** exists; the triage dashboard, officer stage actions and reports do not yet (see [11-known-gaps-and-roadmap.md](11-known-gaps-and-roadmap.md)).
 
 ## Implementation status
 
@@ -45,17 +45,18 @@ Be precise about this in presentations; judges will probe it.
 | Complainant dashboard with filters | **Working** (frontend) | All / Action required / Active / Resolved |
 | 6-stage tracker + timeline + evidence list | **Working** (frontend) | |
 | OTP-based closure and Ombudsman escalation | **Working** (frontend logic), demo OTP `849210` | No real SMS |
-| Bilingual EN/HI, font scale, high contrast | **Working**, partial coverage | Header, nav and landing are translated; many view strings are English-only |
-| Backend REST API (auth, grievances, closure, escalation, institutions) | **Working** (backend) | In-memory data, verified with curl |
+| Admin Support Inbox (official side): conversation list, filters, reply / request documents / clarification, case summary panel | **Working** (frontend) | Opened via the "AICTE Official" role or officer login |
+| Case conversations linked to complaints (complainant ↔ officer) | **Working** (frontend, in memory) | Per-complaint threads, unread counts, read receipts; requests, uploads and clarifications are added to the case timeline and evidence |
+| Bilingual EN/HI, font scale, high contrast | **Working**, partial coverage | Header, nav, landing and the inbox/chat additions are translated; many older view strings are English-only |
+| Backend REST API (auth, grievances, closure, escalation, institutions, inbox, messages, document requests) | **Working** (backend) | In-memory data, verified with curl |
 | Frontend ↔ backend integration | **Not done** | Frontend uses its own mock data |
 | Persistence (database) | **Not done** | Data resets on reload/restart |
-| SHA-256 evidence hashing | **Simulated** | Frontend generates a random 64-hex string, not a real hash |
+| SHA-256 evidence hashing | **Partly real** | Files uploaded in the case chat / document requests are hashed with Web Crypto. The filing wizard still generates a random 64-hex string. |
 | Related-case finder | **Simulated** | Step 5 always shows "2 similar cases"; linking sets `relatedCaseCount = 3` |
 | OTP delivery / authentication / JWT | **Simulated** | Static demo OTP; tokens are placeholder strings |
-| Officer chat replies | **Simulated** | Random canned reply after 1.8 s |
 | Voice search | **Simulated** | Fills "Delhi Technological University" after 1.2 s |
 | Discord hub | **Simulated** | Local UI replica, not connected to Discord |
-| Official / nodal dashboards, role-based access | **Not done** | Role switch is visual only |
+| Official triage dashboard, nodal-officer screens, role-based access | **Not done** | The role switch now changes the tabs (official sees the Support Inbox), but there is no access control |
 | Reports (bureau / region / institution-wise) | **Not done** | |
 | WCAG 2.1 AA / GIGW 3.0 compliance | **Design goal, not audited** | The footer badge states compliance; that claim has not been tested |
 

@@ -9,13 +9,14 @@ Each feature lists where it lives, how it works, and its status (**Working** / *
 - **Where:** `components/HeaderStrip.tsx`; state in `App.tsx`; CSS hooks in `tokens.css` and `index.css`.
 - **What:** Government of India / Ministry of Education / AICTE banner, emergency helplines (Anti-Ragging 1800-180-5522, Women 1091, Cyber 1930), skip-to-content link, screen-reader button, high-contrast toggle, font size A- / A / A+ (0.9 / 1.0 / 1.15), EN / हिं language toggle, Complainant / AICTE Official role switch, sign-in / sign-out.
 - **How:** `fontScale` is written to the CSS variable `--font-scale` on `<html>`; `html { font-size: calc(16px * var(--font-scale)) }` scales all rem-based sizes. `highContrast` sets `data-high-contrast="true"` on `<html>`, which `tokens.css` uses to override colours.
-- **Status:** Working. The screen-reader button and the "AICTE Official" role switch only show an `alert`; the role switch does not change which screens are shown.
+- **Role switch:** handled by `App.handleSwitchRole`. "AICTE Official" opens the Support Inbox (F16) and changes the navbar tabs; "Complainant" returns to the dashboard if the inbox was open.
+- **Status:** Working. The screen-reader button only shows an `alert`. The role switch is not access control: anyone can switch.
 
 ## F2 · Navigation bar
 
 - **Where:** `components/Navbar.tsx` (also defines `type ActiveTab`).
-- **What:** Tabs for Home, Dashboard, File Complaint, Track, Chat, Discord, Login. The Track tab shows a red badge with the count of `PENDING_OTP` complaints.
-- **How:** Each button calls `setActiveTab`. `pendingOtpCount` is computed in `App.tsx`.
+- **What:** Complainant mode: Home, Dashboard, File a Complaint, Track, Official Chatbox, Discord, Login. Official mode: Home, Dashboard, **Support Inbox**, Track, Discord, Login. The Track tab shows an "OTP" badge when any complaint is `PENDING_OTP`; the Chatbox / Support Inbox tabs show the unread count for that side.
+- **How:** Each button calls `setActiveTab`. `pendingOtpCount`, `officerUnreadCount`, `complainantUnreadCount` are computed in `App.tsx` and passed with `activeRole`.
 - **Status:** Working.
 
 ## F3 · Landing page and institution search
@@ -40,10 +41,10 @@ Each feature lists where it lives, how it works, and its status (**Working** / *
 
 ## F5 · Evidence vault (SHA-256 digests)
 
-- **Where:** `FileComplaintView.tsx` `handleFileUpload`; displayed in `TrackComplaintView.tsx` (Stored Proofs card).
+- **Where:** `FileComplaintView.tsx` `handleFileUpload` (wizard); `lib/evidence.ts` (chat and document-request uploads); displayed in `TrackComplaintView.tsx` (Stored Proofs card), the chat thread, and the inbox case panel.
 - **What:** Each proof file is listed with name, size, type, and a hash.
-- **How now:** a random 64-character hex string is generated. The file contents are not read and not uploaded.
-- **Status:** Simulated. Real hashing is a small change: `crypto.subtle.digest('SHA-256', await file.arrayBuffer())`. See [08-implementation-steps.md](08-implementation-steps.md).
+- **How now:** files uploaded through the case conversation are read in the browser and hashed with `crypto.subtle.digest('SHA-256', …)` (`sha256Hex`). The filing wizard still generates a random 64-character hex string. Files are not uploaded to any server.
+- **Status:** Partly real. Switching the wizard to `toEvidenceFiles` from `lib/evidence.ts` finishes it (plan step 1.1 in [08-implementation-steps.md](08-implementation-steps.md)). Web Crypto needs https or localhost.
 
 ## F6 · Related Case Finder / Link to existing complaint (signature feature)
 
@@ -73,21 +74,21 @@ Each feature lists where it lives, how it works, and its status (**Working** / *
 - **Where:** `TrackComplaintView.tsx` `handleVerifyOtp`; backend `POST /api/grievances/{case_id}/verify-closure-otp`.
 - **What:** When a case is at stage 5 (`PENDING_OTP`), the institution's proposed resolution (ATR summary, remedy, refund amount, order reference) is shown and the complainant must enter the 6-digit OTP to accept it. On success the case becomes `RESOLVED` (stage 6) and a Resolution & Closure Certificate panel appears.
 - **Why it matters:** institutions cannot close complaints unilaterally; closure requires the complainant's explicit confirmation.
-- **How:** expected OTP = `otpVerification.generatedOtp` or `849210`. A "use demo OTP" button fills it in. The view updates its local copy and calls `App.handleUpdateComplaintStage(id, 'RESOLVED', feedback)`.
+- **How:** expected OTP = `otpVerification.generatedOtp` or `849210`. A "use demo OTP" button fills it in. The view calls `App.handleUpdateComplaintStage(id, 'RESOLVED', feedback, event)`, which updates the stored complaint and appends the "Case Formally Disposed & Citizen OTP Verified" timeline event.
 - **Status:** Working logic; OTP delivery simulated; the certificate "download" is an `alert`.
 
 ## F10 · Escalation to State Technical Ombudsman
 
 - **Where:** `TrackComplaintView.tsx` `handleEscalateToOmbudsman` + modal; backend `POST /api/grievances/{case_id}/escalate`.
 - **What:** If the complainant rejects the proposed resolution, they give a reason and the case moves to `ESCALATED` with a timeline entry.
-- **Status:** Working. The new timeline entry is only kept in the view's local state, not in `App.complaints` (see [11-known-gaps-and-roadmap.md](11-known-gaps-and-roadmap.md)).
+- **Status:** Working. The escalation event is stored on the complaint in `App` (via the `event` argument of `handleUpdateComplaintStage`), so it persists across tabs.
 
-## F11 · Complainant ↔ officer chat
+## F11 · Complainant ↔ officer chat (complainant side)
 
-- **Where:** `views/UserAdminChatView.tsx`; messages in `App.chatMessages`.
-- **What:** Officer header with case context, an official-notice banner, the message thread (system / officer / complainant styles), quick prompts, and a composer.
-- **How:** `handleSend` appends the complainant's message, shows "typing…", then after 1.8 s appends one of three canned officer replies.
-- **Status:** Simulated. Messages are one global list, not per case. The attachment button is an `alert`.
+- **Where:** `views/UserAdminChatView.tsx`; thread rendering in `components/chat/MessageThread.tsx`; messages in `App.conversations[complaintId]`.
+- **What:** Officer header with case context, an official-notice banner, the case's own message thread, quick prompts, attachments (paperclip) and a composer. Document requests from the officer appear as cards with an **Upload requested documents** button.
+- **How:** `handleSend` sends a `text` message (with any staged attachments) via `App.handleSendMessage`; attachments are hashed with real SHA-256 and added to the complaint's evidence and timeline. `handleUploadForRequest` hashes the chosen files and calls `App.handleFulfillDocumentRequest`, which marks the request *Submitted*, posts a `document_submission` message, adds the files to evidence, and logs a timeline event. Opening the chat marks the thread read for the complainant.
+- **Status:** Working in memory. Replies come from an official in the Support Inbox (F16); there are no automatic replies.
 
 ## F12 · Discord-style community hub
 
@@ -101,7 +102,7 @@ Each feature lists where it lives, how it works, and its status (**Working** / *
 - **Where:** `views/LoginView.tsx`; backend `/api/auth/*`.
 - **Tracks:** Citizen (mobile/email + OTP, type Student / Faculty / Parent), Official (ID + PIN), and a Guest case-tracking shortcut.
 - **One-click evaluator logins:** Student (Aarav Sharma), AICTE Officer (Dr. Verma), Nodal Officer (Prof. K. S. Rao).
-- **How:** success calls `App.onLoginSuccess`, which sets `currentUser` and sets `activeRole` to `official` if the role contains "Official"; then navigates to the dashboard.
+- **How:** success calls `App.onLoginSuccess`, which sets `currentUser` and sets `activeRole` to `official` if the role contains "Official". Officer logins (form and quick-login) then open the Support Inbox; other logins open the dashboard. A logged-in official's name is used on messages sent from the inbox.
 - **Status:** Simulated. Any 6-character OTP is accepted; the official PIN is not checked; the guest case ID typed is not passed to the tracker.
 
 ## F14 · Bilingual interface (English / Hindi)
@@ -113,9 +114,23 @@ Each feature lists where it lives, how it works, and its status (**Working** / *
 ## F15 · Backend REST API
 
 - **Where:** `backend/main.py`, `backend/app/schemas.py`, `backend/app/database.py`.
-- **What:** health/info root, send/verify OTP, login (with demo personas), list/filter/get/create grievances, verify closure OTP (issues certificate ref), escalate, institution search.
+- **What:** health/info root, send/verify OTP, login (with demo personas), list/filter/get/create grievances, verify closure OTP (issues certificate ref), escalate, institution search, **inbox summary, per-case messages, mark read, fulfil document request**.
 - **Status:** Working against in-memory data; not called by the frontend. See [06-api-reference.md](06-api-reference.md).
+
+## F16 · Admin Messages / Support Inbox (official side)
+
+- **Where:** `views/AdminInboxView.tsx`; state and handlers in `App.tsx`; shared thread in `components/chat/MessageThread.tsx`; backend `/api/inbox` and message routes. Design and plan: [12-admin-support-inbox.md](12-admin-support-inbox.md).
+- **Open it:** header role pill → **AICTE Official**, or officer login / "AICTE Official" quick-login.
+- **What:**
+  - **Conversation list:** one row per complaint with complainant name, case number, stage chip, pending-request pill, last message preview and time, unread dot and count. Unread rows sort first, then rows awaiting the officer's reply. Filters: All · Unread · Awaiting reply · Docs pending (with counts). Search by case ID, complainant or institution.
+  - **Thread:** the same `MessageThread` the complainant sees, from the officer's side, with "Seen / Delivered & Logged" receipts.
+  - **Composer with three modes:** *Reply* (text + quick replies, Ctrl/Cmd+Enter sends), *Request documents* (six common document types + "other", due date defaulting to +3 days, optional note), *Clarification* (recorded as an Official Remark).
+  - **Case summary panel:** case ID, title, stage, category, complainant, institution and Permanent ID, SLA, evidence list, pending requests, last three timeline events, **Open full case** (jumps to the tracker for that complaint).
+- **Linked to the complaint:** every message carries `complaintId`. Document requests, clarifications, submissions and chat attachments each append a timeline event; uploaded files are added to `evidenceList`.
+- **Read state:** opening a thread marks it read for the officer; the navbar badge counts unread messages across all threads.
+- **Mobile (≤ 768 px):** list → thread with a *Back to inbox* button; the case panel shows below the thread. ≤ 1100 px the panel moves under the list/thread.
+- **Status:** Working in memory (frontend). The backend routes exist but the frontend does not call them yet. All officials see all conversations (no bureau filter or access control).
 
 ## Not yet built
 
-Admin Messages / Support Inbox (plan: [12-admin-support-inbox.md](12-admin-support-inbox.md)), official triage dashboard, nodal-officer ATR submission screen, bureau / region / institution-wise reports, real related-case matching, deadline alerts and auto-escalation, persistent storage, real authentication, role-based access control. See [11-known-gaps-and-roadmap.md](11-known-gaps-and-roadmap.md).
+Official triage dashboard, nodal-officer ATR submission screen, bureau / region / institution-wise reports, real related-case matching, deadline alerts and auto-escalation, persistent storage, real authentication, role-based access control. See [11-known-gaps-and-roadmap.md](11-known-gaps-and-roadmap.md).
