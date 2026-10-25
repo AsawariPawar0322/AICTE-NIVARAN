@@ -84,7 +84,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
       institution: 'AICTE Head Office, New Delhi',
       rollOrId: officialId
     });
-    setActiveTab('dashboard');
+    setActiveTab('admin-inbox');
   };
 
   const loginDemoPersona = (persona: 'student' | 'officer' | 'nodal') => {
@@ -111,7 +111,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
         rollOrId: 'DTU-NODAL-14'
       });
     }
-    setActiveTab('dashboard');
+    setActiveTab(persona === 'officer' ? 'admin-inbox' : 'dashboard');
   };
 
   return (

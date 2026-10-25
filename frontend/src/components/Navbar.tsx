@@ -8,25 +8,33 @@ import {
   MessageSquareText, 
   MessagesSquare, 
   BellRing,
-  LogIn
+  LogIn,
+  Inbox
 } from 'lucide-react';
 
-export type ActiveTab = 'home' | 'dashboard' | 'file-complaint' | 'track' | 'chat' | 'discord' | 'login';
+export type ActiveTab = 'home' | 'dashboard' | 'file-complaint' | 'track' | 'chat' | 'discord' | 'login' | 'admin-inbox';
 
 interface NavbarProps {
   lang: Language;
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
   pendingOtpCount: number;
+  activeRole: 'complainant' | 'official';
+  officerUnreadCount: number;
+  complainantUnreadCount: number;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   lang,
   activeTab,
   setActiveTab,
-  pendingOtpCount
+  pendingOtpCount,
+  activeRole,
+  officerUnreadCount,
+  complainantUnreadCount
 }) => {
   const t = translations[lang];
+  const isOfficial = activeRole === 'official';
 
   return (
     <nav className="main-navbar" aria-label="Primary Navigation">
@@ -50,14 +58,30 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span>{t.navDashboard}</span>
           </button>
 
-          <button
-            type="button"
-            className={`nav-item ${activeTab === 'file-complaint' ? 'active' : ''}`}
-            onClick={() => setActiveTab('file-complaint')}
-          >
-            <FilePlus2 size={18} />
-            <span>{t.navFileComplaint}</span>
-          </button>
+          {isOfficial ? (
+            <button
+              type="button"
+              className={`nav-item ${activeTab === 'admin-inbox' ? 'active' : ''}`}
+              onClick={() => setActiveTab('admin-inbox')}
+            >
+              <Inbox size={18} />
+              <span>{t.navInbox}</span>
+              {officerUnreadCount > 0 && (
+                <span className="nav-badge-count" aria-label={`${officerUnreadCount} unread`}>
+                  {officerUnreadCount}
+                </span>
+              )}
+            </button>
+          ) : (
+            <button
+              type="button"
+              className={`nav-item ${activeTab === 'file-complaint' ? 'active' : ''}`}
+              onClick={() => setActiveTab('file-complaint')}
+            >
+              <FilePlus2 size={18} />
+              <span>{t.navFileComplaint}</span>
+            </button>
+          )}
 
           <button
             type="button"
@@ -73,15 +97,21 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </button>
 
-          <button
-            type="button"
-            className={`nav-item ${activeTab === 'chat' ? 'active' : ''}`}
-            onClick={() => setActiveTab('chat')}
-          >
-            <MessageSquareText size={18} />
-            <span>{t.navChat}</span>
-            <span className="nav-badge-online">Live</span>
-          </button>
+          {!isOfficial && (
+            <button
+              type="button"
+              className={`nav-item ${activeTab === 'chat' ? 'active' : ''}`}
+              onClick={() => setActiveTab('chat')}
+            >
+              <MessageSquareText size={18} />
+              <span>{t.navChat}</span>
+              {complainantUnreadCount > 0 && (
+                <span className="nav-badge-count" aria-label={`${complainantUnreadCount} unread`}>
+                  {complainantUnreadCount}
+                </span>
+              )}
+            </button>
+          )}
 
           <button
             type="button"
@@ -186,6 +216,16 @@ export const Navbar: React.FC<NavbarProps> = ({
         @keyframes pulseOtp {
           0%, 100% { transform: scale(1); }
           50% { transform: scale(1.1); }
+        }
+        .nav-badge-count {
+          background-color: var(--color-action-600);
+          color: #FFFFFF;
+          font-size: 0.68rem;
+          font-weight: 800;
+          min-width: 18px;
+          padding: 1px 5px;
+          border-radius: var(--radius-pill);
+          text-align: center;
         }
         .nav-badge-online {
           background-color: #10B981;

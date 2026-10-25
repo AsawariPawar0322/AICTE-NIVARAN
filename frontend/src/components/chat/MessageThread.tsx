@@ -325,6 +325,11 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
           border: 1px solid var(--color-success-border);
           border-left: 4px solid var(--color-success-text);
         }
+        .doc-request-card .btn-sm {
+          min-height: 32px;
+          padding: 4px 10px;
+          font-size: 0.8rem;
+        }
         .doc-request-head {
           color: var(--color-navy-900);
           margin-bottom: 6px;

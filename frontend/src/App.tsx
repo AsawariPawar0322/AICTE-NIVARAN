@@ -9,6 +9,7 @@ import { TrackComplaintView } from './views/TrackComplaintView';
 import { UserAdminChatView } from './views/UserAdminChatView';
 import { DiscordReplicaView } from './views/DiscordReplicaView';
 import { LoginView } from './views/LoginView';
+import { AdminInboxView } from './views/AdminInboxView';
 import {
   mockInstitutions,
   initialComplaints,
@@ -21,6 +22,7 @@ import {
   StageKey,
   ConversationMap,
   ConversationReader,
+  DocumentRequest,
   EvidenceFile,
   NewTimelineEvent
 } from './types';
@@ -155,6 +157,68 @@ export function App() {
     }
   };
 
+  const handleOpenCaseFromInbox = (complaintId: string) => {
+    setSelectedComplaintId(complaintId);
+    setActiveTab('track');
+  };
+
+  // Role switch decides which tabs are relevant; officials land on the Support Inbox
+  const handleSwitchRole = (role: 'complainant' | 'official') => {
+    setActiveRole(role);
+    if (role === 'official') {
+      setActiveTab('admin-inbox');
+    } else if (activeTab === 'admin-inbox') {
+      setActiveTab('dashboard');
+    }
+  };
+
+  const handleRequestDocuments = (
+    complaintId: string,
+    officerName: string,
+    request: Omit<DocumentRequest, 'id' | 'status'>,
+    message: string
+  ) => {
+    appendMessage(complaintId, {
+      id: makeId('msg'),
+      complaintId,
+      kind: 'document_request',
+      senderRole: 'officer',
+      senderName: officerName,
+      content: message,
+      timestamp: 'Just now',
+      documentRequest: { ...request, id: makeId('docreq'), status: 'pending' },
+      readByOfficer: true,
+      readByComplainant: false
+    });
+    updateComplaint(complaintId, c => withTimelineEvent(c, {
+      title: 'Documents Requested from Complainant',
+      description: `Requested: ${request.items.join(', ')}${request.dueDate ? ` · Due by ${request.dueDate}` : ''}.`,
+      actor: officerName,
+      role: 'AICTE Officer'
+    }));
+  };
+
+  const handleAddClarification = (complaintId: string, officerName: string, text: string) => {
+    appendMessage(complaintId, {
+      id: makeId('msg'),
+      complaintId,
+      kind: 'clarification',
+      senderRole: 'officer',
+      senderName: officerName,
+      content: text,
+      timestamp: 'Just now',
+      isOfficialNote: true,
+      readByOfficer: true,
+      readByComplainant: false
+    });
+    updateComplaint(complaintId, c => withTimelineEvent(c, {
+      title: 'Clarification Issued to Complainant',
+      description: text.length > 160 ? `${text.slice(0, 157)}...` : text,
+      actor: officerName,
+      role: 'AICTE Officer'
+    }));
+  };
+
   const handleMarkThreadRead = (complaintId: string, reader: ConversationReader) => {
     const flag = reader === 'officer' ? 'readByOfficer' : 'readByComplainant';
     setConversations(prev => {
@@ -221,6 +285,7 @@ export function App() {
   const allMessages = Object.values(conversations).flat();
   const officerUnreadCount = allMessages.filter(m => !m.readByOfficer).length;
   const complainantUnreadCount = allMessages.filter(m => !m.readByComplainant).length;
+  const officialName = currentUser?.role.includes('Official') ? currentUser.name : null;
 
   return (
     <div className="app-root">
@@ -233,7 +298,7 @@ export function App() {
         highContrast={highContrast}
         setHighContrast={setHighContrast}
         activeRole={activeRole}
-        setActiveRole={setActiveRole}
+        setActiveRole={handleSwitchRole}
         currentUser={currentUser}
         onOpenLogin={() => setActiveTab('login')}
         onLogout={() => {
@@ -248,6 +313,9 @@ export function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         pendingOtpCount={pendingOtpCount}
+        activeRole={activeRole}
+        officerUnreadCount={officerUnreadCount}
+        complainantUnreadCount={complainantUnreadCount}
       />
 
       {/* 3. Main Views */}
@@ -303,6 +371,22 @@ export function App() {
             messages={conversations[selectedComplaint.id] || []}
             onSendMessage={handleSendMessage}
             onFulfillDocumentRequest={handleFulfillDocumentRequest}
+            onMarkThreadRead={handleMarkThreadRead}
+          />
+        )}
+
+        {activeTab === 'admin-inbox' && (
+          <AdminInboxView
+            lang={lang}
+            complaints={complaints}
+            conversations={conversations}
+            selectedComplaintId={selectedComplaintId}
+            officialName={officialName}
+            onSelectComplaint={setSelectedComplaintId}
+            onOpenFullCase={handleOpenCaseFromInbox}
+            onSendMessage={handleSendMessage}
+            onRequestDocuments={handleRequestDocuments}
+            onAddClarification={handleAddClarification}
             onMarkThreadRead={handleMarkThreadRead}
           />
         )}
