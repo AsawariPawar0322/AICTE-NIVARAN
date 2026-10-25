@@ -1,18 +1,17 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { translations, Language } from '../locales/translations';
 import { ActiveTab } from '../components/Navbar';
-import { Complaint, UserAdminMessage } from '../types';
-import { 
-  Send, 
-  Paperclip, 
-  ShieldCheck, 
-  MessageSquare, 
-  Clock, 
-  CheckCheck, 
-  Building2, 
+import { MessageThread } from '../components/chat/MessageThread';
+import { Complaint, ConversationReader, EvidenceFile, UserAdminMessage } from '../types';
+import { toEvidenceFiles } from '../lib/evidence';
+import {
+  Send,
+  Paperclip,
+  ShieldCheck,
   Info,
-  Sparkles,
-  ArrowRight
+  ArrowRight,
+  FileText,
+  X
 } from 'lucide-react';
 
 interface UserAdminChatViewProps {
@@ -20,7 +19,9 @@ interface UserAdminChatViewProps {
   setActiveTab: (tab: ActiveTab) => void;
   complaint: Complaint;
   messages: UserAdminMessage[];
-  onSendMessage: (msg: UserAdminMessage) => void;
+  onSendMessage: (complaintId: string, msg: UserAdminMessage) => void;
+  onFulfillDocumentRequest: (complaintId: string, requestId: string, files: EvidenceFile[], senderName: string) => void;
+  onMarkThreadRead: (complaintId: string, reader: ConversationReader) => void;
 }
 
 export const UserAdminChatView: React.FC<UserAdminChatViewProps> = ({
@@ -28,54 +29,72 @@ export const UserAdminChatView: React.FC<UserAdminChatViewProps> = ({
   setActiveTab,
   complaint,
   messages,
-  onSendMessage
+  onSendMessage,
+  onFulfillDocumentRequest,
+  onMarkThreadRead
 }) => {
   const t = translations[lang];
   const [inputText, setInputText] = useState('');
-  const [isOfficerTyping, setIsOfficerTyping] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<EvidenceFile[]>([]);
+  const [isHashing, setIsHashing] = useState(false);
+  const [uploadingRequestId, setUploadingRequestId] = useState<string | null>(null);
+  const attachInputRef = useRef<HTMLInputElement>(null);
+
+  // Opening the thread (and any new officer message while open) marks it read
+  const hasUnread = messages.some(m => !m.readByComplainant);
+  useEffect(() => {
+    if (hasUnread) onMarkThreadRead(complaint.id, 'complainant');
+  }, [complaint.id, hasUnread, onMarkThreadRead]);
 
   const handleSend = (textToSend?: string) => {
-    const text = textToSend || inputText;
-    if (!text.trim()) return;
+    const text = (textToSend || inputText).trim();
+    if (!text && pendingFiles.length === 0) return;
 
-    const userMsg: UserAdminMessage = {
+    onSendMessage(complaint.id, {
       id: `msg-${Date.now()}`,
+      complaintId: complaint.id,
+      kind: 'text',
       senderRole: 'complainant',
-      senderName: `${complaint.complainantName} (You)`,
-      content: text,
-      timestamp: 'Just now'
-    };
+      senderName: complaint.complainantName,
+      content: text || `Shared ${pendingFiles.length} supporting document(s).`,
+      timestamp: 'Just now',
+      attachments: pendingFiles.length > 0 ? pendingFiles : undefined,
+      readByOfficer: false,
+      readByComplainant: true
+    });
 
-    onSendMessage(userMsg);
     if (!textToSend) setInputText('');
+    setPendingFiles([]);
+  };
 
-    // Simulate official nodal officer response
-    setIsOfficerTyping(true);
-    setTimeout(() => {
-      setIsOfficerTyping(false);
-      const officerReplies = [
-        `Thank you for providing this clarification, ${complaint.complainantName}. This has been appended to the official hearing docket and served to the College Registrar.`,
-        `We have verified your statement against the institutional records. The college nodal desk has been instructed to comply within statutory AICTE guidelines.`,
-        `Noted. If you have any additional bank statement or receipt proof, please upload it to the Evidence Vault under the Track tab.`
-      ];
-      const randomReply = officerReplies[Math.floor(Math.random() * officerReplies.length)];
+  const handleAttachFiles = async (files: FileList) => {
+    setIsHashing(true);
+    try {
+      const evidence = await toEvidenceFiles(files);
+      setPendingFiles(prev => [...prev, ...evidence]);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Could not read the selected files.');
+    } finally {
+      setIsHashing(false);
+    }
+  };
 
-      const officerMsg: UserAdminMessage = {
-        id: `msg-${Date.now() + 1}`,
-        senderRole: 'officer',
-        senderName: complaint.assignedOfficer.name,
-        content: randomReply,
-        timestamp: 'Just now',
-        isOfficialNote: true
-      };
-      onSendMessage(officerMsg);
-    }, 1800);
+  const handleUploadForRequest = async (requestId: string, files: FileList) => {
+    setUploadingRequestId(requestId);
+    try {
+      const evidence = await toEvidenceFiles(files);
+      onFulfillDocumentRequest(complaint.id, requestId, evidence, complaint.complainantName);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Could not read the selected files.');
+    } finally {
+      setUploadingRequestId(null);
+    }
   };
 
   const quickPrompts = [
-    'Sir, could you please confirm the next hearing date?',
-    'I have uploaded the stamped seat withdrawal acknowledgement.',
-    'Has the college nodal officer submitted the refund UTR number?',
+    'Could you please confirm the next hearing date?',
+    'Has the institute responded to the notice yet?',
+    'I have shared the requested documents.',
     'Please confirm if my complaint is being treated confidentially.'
   ];
 
@@ -105,8 +124,8 @@ export const UserAdminChatView: React.FC<UserAdminChatViewProps> = ({
 
             <div className="case-ref-box flex items-center gap-2">
               <span className="case-ref-label">Regarding Case:</span>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="case-ref-pill mono"
                 onClick={() => setActiveTab('track')}
                 title="Click to view stage tracking"
@@ -126,59 +145,13 @@ export const UserAdminChatView: React.FC<UserAdminChatViewProps> = ({
           </div>
 
           {/* Messages Flow Area */}
-          <div className="chat-messages-area">
-            {messages.map((m) => {
-              const isUser = m.senderRole === 'complainant';
-              const isSystem = m.senderRole === 'system';
-
-              if (isSystem) {
-                return (
-                  <div key={m.id} className="system-message-row text-center">
-                    <div className="system-bubble">
-                      <span className="system-text">{m.content}</span>
-                      <span className="system-time mono">{m.timestamp}</span>
-                    </div>
-                  </div>
-                );
-              }
-
-              return (
-                <div key={m.id} className={`message-bubble-row ${isUser ? 'user-row' : 'officer-row'}`}>
-                  <div className="message-content-wrap">
-                    <div className="message-sender-line flex items-center gap-2">
-                      <strong className="sender-name">{m.senderName}</strong>
-                      {m.isOfficialNote && (
-                        <span className="official-note-tag">Official Remark</span>
-                      )}
-                      <span className="message-time mono">{m.timestamp}</span>
-                    </div>
-
-                    <div className={`message-bubble ${isUser ? 'user-bubble' : 'officer-bubble'}`}>
-                      <p className="message-text">{m.content}</p>
-                    </div>
-
-                    {isUser && (
-                      <div className="delivered-receipt flex items-center justify-end gap-1">
-                        <CheckCheck size={14} className="text-blue" />
-                        <span>Delivered & Logged</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-
-            {isOfficerTyping && (
-              <div className="officer-row typing-indicator-row">
-                <div className="typing-bubble flex items-center gap-2">
-                  <span className="typing-dot"></span>
-                  <span className="typing-dot"></span>
-                  <span className="typing-dot"></span>
-                  <span className="typing-text">{complaint.assignedOfficer.name} is reviewing & replying...</span>
-                </div>
-              </div>
-            )}
-          </div>
+          <MessageThread
+            lang={lang}
+            messages={messages}
+            viewer="complainant"
+            onUploadForRequest={handleUploadForRequest}
+            uploadingRequestId={uploadingRequestId}
+          />
 
           {/* Quick Inquiry Prompts Bar */}
           <div className="quick-prompts-bar">
@@ -197,13 +170,47 @@ export const UserAdminChatView: React.FC<UserAdminChatViewProps> = ({
             </div>
           </div>
 
+          {/* Staged attachments */}
+          {(pendingFiles.length > 0 || isHashing) && (
+            <div className="pending-attachments-bar flex items-center gap-2">
+              {pendingFiles.map(f => (
+                <span key={f.id} className="pending-file-chip flex items-center gap-1">
+                  <FileText size={12} />
+                  <span>{f.name}</span>
+                  <button
+                    type="button"
+                    className="pending-file-remove"
+                    aria-label={`Remove ${f.name}`}
+                    onClick={() => setPendingFiles(prev => prev.filter(p => p.id !== f.id))}
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              ))}
+              {isHashing && <span className="pending-file-chip">{t.uploading}</span>}
+            </div>
+          )}
+
           {/* Message Composer */}
           <div className="chat-composer-bar flex items-center gap-2">
+            <input
+              ref={attachInputRef}
+              type="file"
+              multiple
+              className="visually-hidden-input"
+              tabIndex={-1}
+              aria-hidden="true"
+              onChange={(e) => {
+                if (e.target.files && e.target.files.length > 0) handleAttachFiles(e.target.files);
+                e.target.value = '';
+              }}
+            />
             <button
               type="button"
               className="btn btn-outline btn-icon-round"
-              title="Attach Supplementary Document / Receipt"
-              onClick={() => alert('Attachment dialog: select fee receipt or photo proof to upload.')}
+              title={t.attachFiles}
+              aria-label={t.attachFiles}
+              onClick={() => attachInputRef.current?.click()}
             >
               <Paperclip size={18} />
             </button>
@@ -223,10 +230,10 @@ export const UserAdminChatView: React.FC<UserAdminChatViewProps> = ({
               type="button"
               className="btn btn-primary btn-send-chat"
               onClick={() => handleSend()}
-              disabled={!inputText.trim()}
+              disabled={(!inputText.trim() && pendingFiles.length === 0) || isHashing}
             >
               <Send size={18} />
-              <span className="hide-on-mobile">Send</span>
+              <span className="hide-on-mobile">{t.send}</span>
             </button>
           </div>
         </div>
@@ -308,118 +315,6 @@ export const UserAdminChatView: React.FC<UserAdminChatViewProps> = ({
           color: #1E40AF;
         }
 
-        .chat-messages-area {
-          flex: 1;
-          padding: 20px;
-          overflow-y: auto;
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-          background: #FAFBFD;
-        }
-
-        .system-message-row {
-          margin: 4px 0;
-        }
-        .system-bubble {
-          display: inline-block;
-          background: #F1F5F9;
-          border: 1px solid #E2E8F0;
-          border-radius: var(--radius-md);
-          padding: 8px 16px;
-          max-width: 80%;
-          font-size: 0.8125rem;
-          color: #475569;
-        }
-        .system-time {
-          display: block;
-          font-size: 0.7rem;
-          color: #94A3B8;
-          margin-top: 2px;
-        }
-
-        .message-bubble-row {
-          display: flex;
-          width: 100%;
-        }
-        .user-row {
-          justify-content: flex-end;
-        }
-        .officer-row {
-          justify-content: flex-start;
-        }
-        .message-content-wrap {
-          max-width: 75%;
-        }
-        .message-sender-line {
-          font-size: 0.75rem;
-          margin-bottom: 4px;
-        }
-        .user-row .message-sender-line {
-          justify-content: flex-end;
-        }
-        .sender-name {
-          color: var(--color-navy-900);
-        }
-        .official-note-tag {
-          font-size: 0.68rem;
-          font-weight: 700;
-          background: #FEF3C7;
-          color: #B45309;
-          padding: 1px 5px;
-          border-radius: 2px;
-        }
-        .message-time {
-          color: #94A3B8;
-          font-size: 0.7rem;
-        }
-
-        .message-bubble {
-          padding: 12px 16px;
-          border-radius: var(--radius-md);
-          font-size: 0.9rem;
-          line-height: 1.45;
-        }
-        .user-bubble {
-          background-color: var(--color-action-600);
-          color: #FFFFFF;
-          border-bottom-right-radius: 2px;
-        }
-        .officer-bubble {
-          background-color: #FFFFFF;
-          border: 1px solid #CBD5E1;
-          color: var(--color-neutral-900);
-          border-bottom-left-radius: 2px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        .delivered-receipt {
-          font-size: 0.7rem;
-          color: #64748B;
-          margin-top: 2px;
-        }
-
-        .typing-bubble {
-          background: #FFFFFF;
-          border: 1px solid #E2E8F0;
-          padding: 8px 14px;
-          border-radius: var(--radius-pill);
-          font-size: 0.8rem;
-          color: var(--color-neutral-600);
-        }
-        .typing-dot {
-          width: 6px;
-          height: 6px;
-          background: var(--color-action-600);
-          border-radius: 50%;
-          animation: typingPulse 1.2s infinite;
-        }
-        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
-        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes typingPulse {
-          0%, 100% { opacity: 0.3; transform: scale(0.8); }
-          50% { opacity: 1; transform: scale(1.2); }
-        }
-
         .quick-prompts-bar {
           padding: 8px 16px;
           background: #F1F5F9;
@@ -450,6 +345,29 @@ export const UserAdminChatView: React.FC<UserAdminChatViewProps> = ({
           background-color: var(--color-brand-blue-100);
           border-color: var(--color-brand-blue-600);
           color: var(--color-brand-blue-600);
+        }
+
+        .pending-attachments-bar {
+          padding: 8px 16px 0 16px;
+          flex-wrap: wrap;
+          background: #FFFFFF;
+          border-top: 1px solid var(--color-neutral-200);
+        }
+        .pending-file-chip {
+          font-size: 0.75rem;
+          background: var(--color-brand-blue-100);
+          color: var(--color-brand-blue-600);
+          border: 1px solid #BFDBFE;
+          border-radius: var(--radius-pill);
+          padding: 2px 8px;
+        }
+        .pending-file-remove {
+          background: none;
+          border: none;
+          color: inherit;
+          cursor: pointer;
+          display: inline-flex;
+          padding: 0;
         }
 
         .chat-composer-bar {

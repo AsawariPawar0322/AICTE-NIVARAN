@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { translations, Language } from '../locales/translations';
 import { ActiveTab } from '../components/Navbar';
-import { Complaint, StageKey } from '../types';
+import { Complaint, StageKey, NewTimelineEvent } from '../types';
 import { 
   Search, 
   KeyRound, 
@@ -25,7 +25,7 @@ interface TrackComplaintViewProps {
   setActiveTab: (tab: ActiveTab) => void;
   complaints: Complaint[];
   selectedComplaint?: Complaint | null;
-  onUpdateComplaintStage: (caseId: string, newStage: StageKey, feedback?: string) => void;
+  onUpdateComplaintStage: (caseId: string, newStage: StageKey, feedback?: string, event?: NewTimelineEvent) => void;
   onOpenChatWithComplaint: (complaint: Complaint) => void;
 }
 
@@ -43,9 +43,11 @@ export const TrackComplaintView: React.FC<TrackComplaintViewProps> = ({
   const [searchId, setSearchId] = useState(
     selectedComplaint ? selectedComplaint.id : (complaints[0]?.id || 'AICTE-2026-GRV-84920')
   );
-  const [activeCase, setActiveCase] = useState<Complaint>(
-    selectedComplaint || complaints[0] || null
+  // Store only the id so the view always shows the latest complaint from App state
+  const [activeCaseId, setActiveCaseId] = useState<string | undefined>(
+    selectedComplaint?.id || complaints[0]?.id
   );
+  const activeCase = complaints.find(c => c.id === activeCaseId) || complaints[0];
 
   // OTP Form State
   const [otpInput, setOtpInput] = useState('');
@@ -57,7 +59,7 @@ export const TrackComplaintView: React.FC<TrackComplaintViewProps> = ({
   const handleLookup = () => {
     const found = complaints.find(c => c.id.trim().toLowerCase() === searchId.trim().toLowerCase());
     if (found) {
-      setActiveCase(found);
+      setActiveCaseId(found.id);
       setOtpError('');
       setOtpSuccess(false);
     } else {
@@ -73,17 +75,11 @@ export const TrackComplaintView: React.FC<TrackComplaintViewProps> = ({
     if (otpInput.trim() === expectedOtp) {
       setOtpSuccess(true);
       setOtpError('');
-      onUpdateComplaintStage(activeCase.id, 'RESOLVED', 'Complainant verified OTP closure. Resolution accepted.');
-      setActiveCase({
-        ...activeCase,
-        currentStage: 'RESOLVED',
-        stageNumber: 6,
-        otpVerification: {
-          generatedOtp: expectedOtp,
-          isVerified: true,
-          verifiedAt: 'Just now',
-          citizenFeedback: 'Verified and resolved satisfactorily via Citizen OTP Gateway.'
-        }
+      onUpdateComplaintStage(activeCase.id, 'RESOLVED', 'Complainant verified OTP closure. Resolution accepted.', {
+        title: 'Case Formally Disposed & Citizen OTP Verified',
+        description: 'Complainant verified satisfaction via 6-digit OTP. AICTE closure certificate generated.',
+        actor: activeCase.complainantName,
+        role: 'Citizen Verification'
       });
     } else {
       setOtpError(`Invalid OTP. Please enter the 6-digit code (${expectedOtp}) sent to your mobile.`);
@@ -96,22 +92,11 @@ export const TrackComplaintView: React.FC<TrackComplaintViewProps> = ({
       alert('Please specify the reason for dissatisfaction before escalating to the Ombudsman.');
       return;
     }
-    onUpdateComplaintStage(activeCase.id, 'ESCALATED', dissatisfiedReason);
-    setActiveCase({
-      ...activeCase,
-      currentStage: 'ESCALATED',
-      timeline: [
-        ...activeCase.timeline,
-        {
-          id: `tl-esc-${Date.now()}`,
-          title: 'Escalated to State Technical Ombudsman',
-          description: `Citizen rejected resolution with remarks: "${dissatisfiedReason}". Case reopened for judicial scrutiny.`,
-          actor: 'Citizen Rejection Gateway',
-          role: 'Complainant Action',
-          timestamp: 'Just now',
-          stage: 'ESCALATED'
-        }
-      ]
+    onUpdateComplaintStage(activeCase.id, 'ESCALATED', dissatisfiedReason, {
+      title: 'Escalated to State Technical Ombudsman',
+      description: `Citizen rejected resolution with remarks: "${dissatisfiedReason}". Case reopened for judicial scrutiny.`,
+      actor: 'Citizen Rejection Gateway',
+      role: 'Complainant Action'
     });
     setShowEscalationModal(false);
   };

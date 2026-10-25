@@ -9,13 +9,32 @@ import { TrackComplaintView } from './views/TrackComplaintView';
 import { UserAdminChatView } from './views/UserAdminChatView';
 import { DiscordReplicaView } from './views/DiscordReplicaView';
 import { LoginView } from './views/LoginView';
-import { 
-  mockInstitutions, 
-  initialComplaints, 
-  initialChatMessages 
+import {
+  mockInstitutions,
+  initialComplaints,
+  initialConversations
 } from './data/mockData';
-import { Complaint, Institution, UserAdminMessage, StageKey } from './types';
+import {
+  Complaint,
+  Institution,
+  UserAdminMessage,
+  StageKey,
+  ConversationMap,
+  ConversationReader,
+  EvidenceFile,
+  NewTimelineEvent
+} from './types';
 import { ShieldCheck, Heart, ExternalLink, HelpCircle } from 'lucide-react';
+
+const makeId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
+const withTimelineEvent = (c: Complaint, event: NewTimelineEvent): Complaint => ({
+  ...c,
+  timeline: [
+    ...c.timeline,
+    { ...event, id: makeId('tl'), timestamp: 'Just now', stage: event.stage ?? c.currentStage }
+  ]
+});
 
 export function App() {
   const [lang, setLang] = useState<Language>('en');
@@ -42,9 +61,12 @@ export function App() {
   // Application Data State
   const [institutions] = useState<Institution[]>(mockInstitutions);
   const [complaints, setComplaints] = useState<Complaint[]>(initialComplaints);
-  const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(initialComplaints[0]);
+  // Selection is stored by id so views always read the latest version of the complaint
+  const [selectedComplaintId, setSelectedComplaintId] = useState<string | null>(initialComplaints[0]?.id ?? null);
   const [selectedInstForComplaint, setSelectedInstForComplaint] = useState<Institution | null>(null);
-  const [chatMessages, setChatMessages] = useState<UserAdminMessage[]>(initialChatMessages);
+  const [conversations, setConversations] = useState<ConversationMap>(initialConversations);
+
+  const selectedComplaint = complaints.find(c => c.id === selectedComplaintId) ?? null;
 
   // Apply font scale and high contrast to document root
   useEffect(() => {
@@ -59,46 +81,146 @@ export function App() {
     }
   }, [highContrast]);
 
+  const updateComplaint = (caseId: string, update: (c: Complaint) => Complaint) => {
+    setComplaints(prev => prev.map(c => (c.id === caseId ? update(c) : c)));
+  };
+
+  const appendMessage = (complaintId: string, msg: UserAdminMessage) => {
+    setConversations(prev => ({ ...prev, [complaintId]: [...(prev[complaintId] || []), msg] }));
+  };
+
   const handleAddNewComplaint = (newComplaint: Complaint) => {
-    setComplaints([newComplaint, ...complaints]);
-    setSelectedComplaint(newComplaint);
+    setComplaints(prev => [newComplaint, ...prev]);
+    setSelectedComplaintId(newComplaint.id);
+    appendMessage(newComplaint.id, {
+      id: makeId('msg'),
+      complaintId: newComplaint.id,
+      kind: 'system',
+      senderRole: 'system',
+      senderName: 'AICTE Grievance System',
+      content: `Conversation opened for case ${newComplaint.id}. All messages in this thread are logged into the official case audit trail.`,
+      timestamp: 'Just now',
+      readByOfficer: true,
+      readByComplainant: true
+    });
   };
 
   const handleSelectComplaintForTracking = (complaint: Complaint) => {
-    setSelectedComplaint(complaint);
+    setSelectedComplaintId(complaint.id);
     setActiveTab('track');
   };
 
   const handleOpenChatWithComplaint = (complaint: Complaint) => {
-    setSelectedComplaint(complaint);
+    setSelectedComplaintId(complaint.id);
     setActiveTab('chat');
   };
 
-  const handleUpdateComplaintStage = (caseId: string, newStage: StageKey, feedback?: string) => {
-    setComplaints(prev => prev.map(c => {
-      if (c.id === caseId) {
-        return {
-          ...c,
-          currentStage: newStage,
-          stageNumber: newStage === 'RESOLVED' ? 6 : c.stageNumber,
-          otpVerification: {
-            ...c.otpVerification,
-            generatedOtp: c.otpVerification?.generatedOtp || '849210',
-            isVerified: newStage === 'RESOLVED',
-            verifiedAt: newStage === 'RESOLVED' ? 'Today, 04:30 PM' : undefined,
-            citizenFeedback: feedback || c.otpVerification?.citizenFeedback
-          }
-        };
-      }
-      return c;
-    }));
+  const handleUpdateComplaintStage = (
+    caseId: string,
+    newStage: StageKey,
+    feedback?: string,
+    event?: NewTimelineEvent
+  ) => {
+    updateComplaint(caseId, c => {
+      const updated: Complaint = {
+        ...c,
+        currentStage: newStage,
+        stageNumber: newStage === 'RESOLVED' ? 6 : c.stageNumber,
+        otpVerification: {
+          ...c.otpVerification,
+          generatedOtp: c.otpVerification?.generatedOtp || '849210',
+          isVerified: newStage === 'RESOLVED',
+          verifiedAt: newStage === 'RESOLVED' ? 'Today, 04:30 PM' : undefined,
+          citizenFeedback: feedback || c.otpVerification?.citizenFeedback
+        }
+      };
+      return event ? withTimelineEvent(updated, { ...event, stage: newStage }) : updated;
+    });
   };
 
-  const handleSendMessage = (msg: UserAdminMessage) => {
-    setChatMessages(prev => [...prev, msg]);
+  // Complainant or officer message; attached files are also added to the case evidence
+  const handleSendMessage = (complaintId: string, msg: UserAdminMessage) => {
+    appendMessage(complaintId, msg);
+    const files = msg.attachments || [];
+    if (files.length > 0) {
+      updateComplaint(complaintId, c => withTimelineEvent(
+        { ...c, evidenceList: [...c.evidenceList, ...files] },
+        {
+          title: 'Supplementary Evidence Shared via Case Conversation',
+          description: `${files.length} file(s) shared with SHA-256 digests: ${files.map(f => f.name).join(', ')}.`,
+          actor: msg.senderName,
+          role: msg.senderRole === 'officer' ? 'AICTE Officer' : 'Complainant'
+        }
+      ));
+    }
+  };
+
+  const handleMarkThreadRead = (complaintId: string, reader: ConversationReader) => {
+    const flag = reader === 'officer' ? 'readByOfficer' : 'readByComplainant';
+    setConversations(prev => {
+      const thread = prev[complaintId];
+      if (!thread || thread.every(m => m[flag])) return prev;
+      return { ...prev, [complaintId]: thread.map(m => (m[flag] ? m : { ...m, [flag]: true })) };
+    });
+  };
+
+  const handleFulfillDocumentRequest = (
+    complaintId: string,
+    requestId: string,
+    files: EvidenceFile[],
+    senderName: string
+  ) => {
+    const requestMsg = (conversations[complaintId] || []).find(m => m.documentRequest?.id === requestId);
+    const request = requestMsg?.documentRequest;
+    if (!request || request.status === 'fulfilled' || files.length === 0) return;
+
+    setConversations(prev => ({
+      ...prev,
+      [complaintId]: [
+        ...(prev[complaintId] || []).map(m =>
+          m.documentRequest?.id === requestId
+            ? {
+                ...m,
+                documentRequest: {
+                  ...request,
+                  status: 'fulfilled' as const,
+                  fulfilledAt: 'Just now',
+                  fulfilledFileIds: files.map(f => f.id)
+                }
+              }
+            : m
+        ),
+        {
+          id: makeId('msg'),
+          complaintId,
+          kind: 'document_submission',
+          senderRole: 'complainant',
+          senderName,
+          content: `Submitted ${files.length} document(s) for: ${request.items.join(', ')}.`,
+          timestamp: 'Just now',
+          attachments: files,
+          replyToRequestId: requestId,
+          readByOfficer: false,
+          readByComplainant: true
+        }
+      ]
+    }));
+
+    updateComplaint(complaintId, c => withTimelineEvent(
+      { ...c, evidenceList: [...c.evidenceList, ...files] },
+      {
+        title: 'Requested Documents Submitted by Complainant',
+        description: `${files.length} file(s) uploaded with SHA-256 digests in response to the request for: ${request.items.join(', ')}.`,
+        actor: senderName,
+        role: 'Complainant'
+      }
+    ));
   };
 
   const pendingOtpCount = complaints.filter(c => c.currentStage === 'PENDING_OTP').length;
+  const allMessages = Object.values(conversations).flat();
+  const officerUnreadCount = allMessages.filter(m => !m.readByOfficer).length;
+  const complainantUnreadCount = allMessages.filter(m => !m.readByComplainant).length;
 
   return (
     <div className="app-root">
@@ -178,8 +300,10 @@ export function App() {
             lang={lang}
             setActiveTab={setActiveTab}
             complaint={selectedComplaint}
-            messages={chatMessages}
+            messages={conversations[selectedComplaint.id] || []}
             onSendMessage={handleSendMessage}
+            onFulfillDocumentRequest={handleFulfillDocumentRequest}
+            onMarkThreadRead={handleMarkThreadRead}
           />
         )}
 
