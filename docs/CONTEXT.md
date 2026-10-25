@@ -31,15 +31,17 @@ backend/
   __pycache__/*.pyc               Committed on main by mistake (bytecode) — see 11-known-gaps
   requirements.txt                fastapi, uvicorn, pydantic, python-multipart
 frontend/
-  package.json                    deps: react 19, lucide-react, @phosphor-icons/react
+  package.json                    deps: react 19, recharts, react-router-dom, tailwindcss, postcss, autoprefixer, lucide-react, @phosphor-icons/react
+  tailwind.config.js              Tailwind v3 config with preflight: false
+  postcss.config.js               PostCSS plugins for Tailwind
   index.html                      Shell, Google Fonts (Noto Sans / Devanagari / Mono), favicon = /aicte-nivaran-logo.png
   src/main.tsx                    Mounts <App/> in StrictMode, imports index.css
-  src/App.tsx          ~687 L     ALL global state + handlers + hash routing + footer
+  src/App.tsx          ~674 L     ALL global state + handlers + hash routing + mounts <AdminPortal /> on #admin + footer
   src/types/index.ts   ~184 L     All TS types (incl. MessageKind, DocumentRequest, ConversationMap, NewTimelineEvent)
   src/data/mockData.ts ~638 L     All seed data incl. initialConversations (3 threads)
   src/lib/evidence.ts   ~32 L     sha256Hex (Web Crypto), toEvidenceFiles, formatFileSize
   src/locales/translations.ts ~252 L  EN/HI dictionary (`translations[lang].key`)
-  src/tokens.css, src/index.css   Design tokens; global base + utilities + .visually-hidden-input
+  src/tokens.css, src/index.css   Design tokens; base + utilities + tailwind directives
   src/App.css                     UNUSED Vite template leftover (not imported)
   src/components/HeaderStrip.tsx ~520 L  Gov header: lang, font scale, contrast, role switch, login/logout, logo → home
   src/components/Navbar.tsx      ~349 L  Defines `ActiveTab`; Home / Citizen Portal / Discord + Officer Chat / Administration buttons; citizen sub-nav; OTP + unread badges
@@ -53,9 +55,18 @@ frontend/
   src/views/FileComplaintView.tsx   ~1280 L  5-step complaint wizard
   src/views/TrackComplaintView.tsx  ~1112 L  Case lookup, 6-stage tracker, OTP closure, escalation, audit trail, evidence
   src/views/UserAdminChatView.tsx    ~395 L  Full-page complainant chat (#chat fallback); same thread as the floating chat
-  src/views/AdministrationView.tsx  ~1303 L  Admin portal: Ledger / Case Linker / Compliance / SLA radar / Support Inbox sub-tabs
-  src/views/AdminInboxView.tsx      ~1025 L  Support Inbox (embedded in AdministrationView): list/filters/search, thread, composer, case panel
   src/views/DiscordReplicaView.tsx  ~1164 L  Discord-style community hub with slash commands
+  src/admin/
+    App.tsx                       AdminPortal entry with MemoryRouter, code-split Suspense, and 15 routes
+    components/                   AdminShell, Sidebar, TopBar (with "Citizen Portal" return button), GovFooter, GovLogos
+    context/AppContext.tsx        Official session context (activeOfficer, toasts, language, contrast)
+    design-system/                Reusable admin primitives (Button, Modal, FormControls, StatusChip, ToastContainer)
+    mock/data.ts                  Admin seed cases (synced with DTU inst-1 and AICTE-2026-GRV-84920)
+    services/api.ts               Administrative client service with localStorage caching
+    pages/                        15 lazy-loaded admin modules (Dashboard, AllCases, CaseDetail, VerificationQueue,
+                                  InstitutionDirectory, OriginExplorer, RelatedCasesCoordination, ResolutionProofReview,
+                                  StageTracking, Messages, ComplaintPoolVoting, ReportsAnalytics, AdminSettings,
+                                  AuditLogs, ApiSpecViewer)
 ```
 
 Every component and view carries its own CSS in an inline `<style>{`...`}</style>` block at the bottom of its JSX. Logic is in the first ~100–220 lines of each view.

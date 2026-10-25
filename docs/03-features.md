@@ -131,12 +131,28 @@ Each feature lists where it lives, how it works, and its status (**Working** / *
 - **Mobile (≤ 768 px):** list → thread with a *Back to inbox* button; the case panel shows below the thread. ≤ 1100 px the panel moves under the list/thread.
 - **Status:** Working in memory (frontend). The backend routes exist but the frontend does not call them yet. All officials see all conversations (no bureau filter or access control).
 
-## F17 · Administration portal (added on main)
+## F17 · Enterprise Administration Portal (15 Modules)
 
-- **Where:** `views/AdministrationView.tsx` (`#admin`); entry via `views/AdminLoginView.tsx`.
-- **Sub-tabs:** *Bureau Grievance Ledger* (stage metrics, filters/search, case table, action desk with evidence check, statutory notice, quick stage buttons, chat), *Intelligent Case Linker* (institution clusters with "confirm link"), *Institutional Compliance* (directory of the 5 institutions), *72h SLA & Escalation Radar*, and **Support Inbox** (F16).
-- **Status:** Working in memory, with caveats: the case-linker clusters are hard-coded; the quick "Confirm Resolved" button closes a case **without the citizen OTP** (conflicts with F9), and admin stage changes don't add timeline events; the header always names Dr. Verma. See B14–B17 in [11-known-gaps-and-roadmap.md](11-known-gaps-and-roadmap.md).
+- **Where:** `frontend/src/admin/App.tsx` (`#admin` / `#admin-inbox`); entry via `views/AdminLoginView.tsx`. Ported from `Krishnav1310/AICTE-ADMIN`.
+- **Architecture:** Mounts inside `App.tsx` via `MemoryRouter` with code-split lazy routes. Features an e-Office statutory topbar with breadcrumbs, role selector, live clock, dynamic officer avatar, and a direct `← Citizen Portal` return button.
+- **15 Modules:**
+  1. **Dashboard** (`/`): Executive KPI metrics (Total, Assigned, Due in 3 Days, Overdue, Resolved), urgent action desk, and regional distributions.
+  2. **All Cases** (`/cases`): Full registry table with instant search, multi-filter selectors, and CSV export.
+  3. **Case Detail** (`/cases/:id`): Complete dossier with timeline, evidence SHA-256 digests, hearing scheduler, bureau transfer modal, and gazette notice generator.
+  4. **Verification Queue** (`/verification`): Document authenticity checklist and bulk review for fee/certificate proofs.
+  5. **Colleges Directory** (`/institutions`): Institutional directory with Permanent ID index, compliance ratings, and nodal contacts.
+  6. **Map View / Origin Explorer** (`/origin-explorer`): Spatial state/district grievance density mapping.
+  7. **Similar Cases Coordination** (`/coordination`): AI root-cause similarity clustering and joint hearing bundling.
+  8. **Resolution Proof Review** (`/resolution-proofs`): Review desk for institution ATR compliance certificates, refund slips, and penalty orders.
+  9. **Stage Tracking** (`/stage-tracking`): Visual statutory 6-stage SLA monitoring timeline.
+  10. **Messages / Support Inbox** (`/messages`): Official-complainant messaging thread with document request cards and formal clarifications.
+  11. **Complaint Pool Voting** (`/complaint-pool`): Syndicated student petition pool and collective voting.
+  12. **Reports & Analytics** (`/reports`): Interactive Recharts charts for monthly grievance trends, category split, and aging analysis.
+  13. **Admin Settings** (`/settings`): SLA threshold rules and bureau allotment parameters.
+  14. **Audit Logs** (`/audit-logs`): Immutable chronological action ledger.
+  15. **API Spec Viewer** (`/api-spec`): Interactive OpenAPI documentation interface.
+- **Status:** Working in memory. Includes fallback mock data and synchronizes with local case `AICTE-2026-GRV-84920` and Delhi Technological University (`inst-1`).
 
 ## Not yet built
 
-Official triage dashboard, nodal-officer ATR submission screen, bureau / region / institution-wise reports, real related-case matching, deadline alerts and auto-escalation, persistent storage, real authentication, role-based access control. See [11-known-gaps-and-roadmap.md](11-known-gaps-and-roadmap.md).
+Real related-case semantic embeddings against PostgreSQL, SMS gateway integration for production OTP, real database persistence across restarts, and production authentication / JWT validation. See [11-known-gaps-and-roadmap.md](11-known-gaps-and-roadmap.md).

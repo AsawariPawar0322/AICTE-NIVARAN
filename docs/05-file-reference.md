@@ -7,7 +7,7 @@ The role of every tracked file. Line counts are approximate.
 | File | Role |
 |---|---|
 | `README.md` | Public project pitch: vision, challenge, capabilities, signature innovation, diagrams, stack, run instructions, privacy notes, roadmap, disclaimer. |
-| `.gitignore` | Ignores `node_modules`, `dist`, logs, editor files. Does **not** ignore `backend/.venv/` or `__pycache__/`, which is why those show as untracked. |
+| `.gitignore` | Ignores `node_modules`, `dist`, logs, editor files, `backend/.venv/`, `__pycache__/`, `*.pyc`, and temporary `admin-portal/`. |
 | `CLAUDE.md` | Instructions for AI assistants working in this repo (read `docs/CONTEXT.md` first, keep docs updated). |
 | `docs/` | This documentation set. See [README.md](README.md). |
 
@@ -26,9 +26,11 @@ The role of every tracked file. Line counts are approximate.
 
 | File | Role |
 |---|---|
-| `package.json` | Package `sih`; scripts `dev`, `build` (`tsc -b && vite build`), `lint` (oxlint), `preview`; deps React 19, lucide-react. |
+| `package.json` | Package `sih`; scripts `dev`, `build` (`tsc -b && vite build`), `lint` (oxlint), `preview`; deps React 19, recharts, react-router-dom, tailwindcss, postcss, autoprefixer, lucide-react, @phosphor-icons/react. |
 | `package-lock.json` | npm lockfile. |
-| `vite.config.ts` | Vite with the React plugin; no proxy or aliases. |
+| `tailwind.config.js` | Tailwind CSS v3 configuration with brand color tokens and `preflight: false` for seamless coexistence with citizen CSS. |
+| `postcss.config.js` | PostCSS config for Tailwind CSS and Autoprefixer. |
+| `vite.config.ts` | Vite with the React plugin; code-split chunking. |
 | `tsconfig.json` | Project references to `tsconfig.app.json` and `tsconfig.node.json`. |
 | `tsconfig.app.json` | App compile settings: ES2023, bundler resolution, `jsx: react-jsx`, `noEmit`, unused-locals checks **off**. |
 | `tsconfig.node.json` | Settings for `vite.config.ts` only. |
@@ -96,10 +98,42 @@ Every view takes `lang` and (except `AdminInboxView`) `setActiveTab`, plus the p
 | `AdministrationView.tsx` | ~1303 | `complaints`, `institutions`, `onSelectComplaintForTracking`, `onOpenOfficialChat`, `onUpdateComplaintStage`, `messagesPanel?`, `officerUnreadCount?`, `initialAdminTab?` | Admin portal (`#admin`): sub-tabs Bureau Grievance Ledger (filters, action desk, notices, stage buttons), Intelligent Case Linker (hard-coded clusters), Institutional Compliance, 72h SLA & Escalation Radar, **Support Inbox** (`messagesPanel`). |
 | `DiscordReplicaView.tsx` | ~1164 | — | Discord-style hub: servers, channels, messages with embeds, members, voice UI, `/status` and `/helpline` bot commands. |
 
+## `frontend/src/admin/` — Enterprise Administration Portal (15 modules)
+
+| File / Folder | Role |
+|---|---|
+| `App.tsx` | Exports `<AdminPortal />` wrapping routes in `AppProvider` and an isolated `MemoryRouter`. Lazy loads all 15 administrative views. |
+| `components/AdminShell.tsx` | Shell layout composing `Sidebar`, `TopBar`, breadcrumbs, and `ToastContainer`. |
+| `components/Sidebar.tsx` | Collapsible sidebar with navigation links to all 15 administrative modules. |
+| `components/TopBar.tsx` | e-Office header: breadcrumbs, registry search, NIC officer session pill, role switcher, and `← Citizen Portal` exit button. |
+| `components/GovFooter.tsx` | Official administrative footer adhering to GIGW standards. |
+| `components/GovLogos.tsx` | SVG emblems and ministry seals. |
+| `context/AppContext.tsx` | Session state owner: `activeOfficer`, officer toasts, language toggle, and high-contrast toggle. |
+| `design-system/` | Reusable administrative primitives (`Button`, `Modal`, `FormControls`, `StatusChip`, `ToastContainer`, `tokens.css`). |
+| `mock/data.ts` | Fallback mock registry with 10 seed cases, bureau metrics, and DTU institutional linkage. |
+| `services/api.ts` | Administrative data service with `localStorage` caching and mock latency simulation. |
+| `types/index.ts` | TypeScript interfaces for administrative cases, officer records, and audit events. |
+| `utils/documentDownloader.ts` | Synthetic gazette notice and PDF generator. |
+| `pages/Dashboard.tsx` | Executive KPI dashboard with urgency radar and triage queue. |
+| `pages/AllCases.tsx` | Comprehensive case ledger with CSV export. |
+| `pages/CaseDetail.tsx` | Full case file dossier with hearing scheduling and gazette notices. |
+| `pages/VerificationQueue.tsx` | Document verification desk and authenticity checklist. |
+| `pages/InstitutionDirectory.tsx` | Directory of approved technical institutions. |
+| `pages/OriginExplorer.tsx` | Spatial geographic grievance heatmap. |
+| `pages/RelatedCasesCoordination.tsx` | AI root-cause similarity clustering and joint hearing bundling. |
+| `pages/ResolutionProofReview.tsx` | ATR compliance certificate and refund receipt verification. |
+| `pages/StageTracking.tsx` | Visual statutory 6-stage SLA timeline. |
+| `pages/Messages.tsx` | Administrative messaging and document request inbox. |
+| `pages/ComplaintPoolVoting.tsx` | Student class-action complaint pool and petition upvoting. |
+| `pages/ReportsAnalytics.tsx` | Interactive Recharts analytics (trends, category breakdowns, aging). |
+| `pages/AdminSettings.tsx` | SLA threshold configuration and bureau rules. |
+| `pages/AuditLogs.tsx` | Tamper-evident official action log. |
+| `pages/ApiSpecViewer.tsx` | OpenAPI specification viewer. |
+
 ## Not tracked (local only)
 
 | Path | Note |
 |---|---|
-| `backend/.venv/` | Local Python virtualenv. Should be added to `.gitignore`. |
-| `backend/__pycache__/`, `backend/app/__pycache__/` | Python bytecode. Three `*.cpython-310.pyc` files were **committed on main** (`ee6cebb`); they should be removed from git and added to `.gitignore`. |
-| `frontend/node_modules/`, `frontend/dist/` | Ignored. |
+| `backend/.venv/` | Local Python virtualenv (ignored via `.gitignore`). |
+| `backend/__pycache__/`, `backend/app/__pycache__/` | Python bytecode (ignored via `.gitignore`). |
+| `frontend/node_modules/`, `frontend/dist/` | Ignored via `.gitignore`. |

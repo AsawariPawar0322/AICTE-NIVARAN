@@ -62,12 +62,11 @@ Data resets on page reload, so you can repeat the demo.
 | 3:30 | Track `…84920` | Show the 6-stage stepper and the institute's ATR (₹44,000 refund, UTR) | "The college says it is resolved. But it cannot close the case itself." |
 | 4:00 | Track | Enter `849210` → certificate | **Critical feature:** "Only the complainant's OTP closes the case." |
 | 4:30 | Track (reload, then `…84920` again) | Instead click "Reject & Escalate to Ombudsman", enter a reason, confirm | "Rejection goes straight to the State Technical Ombudsman, on the record." |
-| 5:00 | Navbar → **Administration** → persona *Dr. Ramesh Chandra Verma* | Admin portal opens; the Administration button shows **2** unread. Click the **Support Inbox** sub-tab, open **Pooja Kulkarni · 79114**: unread messages, pending document request, case panel | "Officials see every complainant conversation next to the case it belongs to." |
-| 5:20 | Inbox composer | **Clarification**: "PFMS freeze is on the institute's side; nodal officer notified." Then **Request documents**: tick *Fee payment receipt*, send | "Clarifications and document requests go on the official record." |
-| 5:40 | Header → **Complainant**, navbar **Officer Chat** | The floating chat opens on the same case; upload any file on the request card → it shows *Submitted* | "Uploads are SHA-256 hashed in the browser and attached to the case." |
-| 6:00 | Header → **AICTE Official** → Support Inbox → **Open full case** | Tracker shows the new evidence file and the timeline events | "Every message, request and upload is attached to the complaint and its audit trail — nothing lives in personal email." |
-| 6:20 | Discord | Type `/status` | "Community hub with bot lookups for students who need peer help." |
-| 6:40 | Admin portal → Intelligent Case Linker | Show the institution clusters (illustrative) | Close on roadmap: real matching, database, access control. |
+| 5:00 | Navbar → **Administration** → persona *Dr. Ramesh Chandra Verma* | Opens the 15-module Enterprise Admin Portal (`#admin`). Show executive dashboard: urgent triage items, KPI cards, regional split | "Official e-Office dashboard: active escalations, 72h statutory SLA monitoring, and bureau allocation." |
+| 5:30 | Sidebar → **All Cases** & **Review Queue** | Filter cases by status, search DTU, open Verification Queue to review fee receipts with authenticity checklists | "Centralized registry with CSV export and statutory verification checklists." |
+| 5:50 | Sidebar → **Map View** & **Similar Cases** | Origin Explorer (spatial district/state heatmap) → Similar Cases (AI root-cause clustering) | "Spatial distribution analysis identifies localized grievance spikes; similarity clustering bundles joint hearings." |
+| 6:15 | Sidebar → **Messages** & **Reports** | Support inbox with document requests; Reports & Analytics with interactive Recharts | "Officers communicate with students directly on the record, backed by aging and category analytics." |
+| 6:40 | TopBar → **← Citizen Portal** | Click the orange exit button to return to `#home` | "Seamless switching between public complainant services and official e-Office workspaces." |
 
 This runs about 7 minutes; for a 5-minute slot, drop the escalation step (4:30) and Discord.
 

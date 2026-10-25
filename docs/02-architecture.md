@@ -7,6 +7,9 @@
 | UI framework | React | ^19.3.1 |
 | Language | TypeScript | ~6.0.3 |
 | Build/dev server | Vite (+ `@vitejs/plugin-react`) | ^8.3.4 |
+| Admin Router | react-router-dom (MemoryRouter for Admin) | ^6.28.0 |
+| Charts / Analytics | Recharts | ^2.15.4 |
+| CSS Utilities | Tailwind CSS (preflight: false) + PostCSS | ^3.4.15 |
 | Icons | lucide-react, @phosphor-icons/react (via `components/Icon.tsx`) | ^1.61.0, ^2.1.10 |
 | Lint | oxlint (react, typescript, oxc plugins) | ^1.88.0 |
 | Fonts | Google Fonts: Noto Sans, Noto Sans Devanagari, Noto Sans Mono | — |
@@ -16,7 +19,7 @@
 | Data store | In-memory Python lists / React state | — |
 | Hosting | Vercel (frontend) | — |
 
-No router library, state library, CSS framework, HTTP client, or database is used. Routing is a small hand-written hash router in `App.tsx`.
+Routing uses a hybrid architecture: hand-written hash routing (`#home`, `#dashboard`, `#track`) on the citizen side, and an isolated `MemoryRouter` inside `<AdminPortal />` for the 15 enterprise administration modules. Tailwind CSS v3 is enabled with `preflight: false` so it coexists with existing citizen CSS.
 
 ## Current system (as built)
 
@@ -99,8 +102,8 @@ Hash-based: `activeTab` is read from `location.hash` on load (must be in `VALID_
 | `dashboard`, `citizen` | `ComplainantDashboard` |
 | `file-complaint` | `FileComplaintView` |
 | `track` | `TrackComplaintView` |
-| `admin` | `AdministrationView` (Ledger sub-tab) |
-| `admin-inbox` | `AdministrationView` opened on the **Support Inbox** sub-tab (`AdminInboxView`, embedded) |
+| `admin` | `AdminPortal` (15 modules: Dashboard `/`, All Cases `/cases`, Case Detail `/cases/:id`, Verification Queue `/verification`, Colleges `/institutions`, Map `/origin-explorer`, Similar Cases `/coordination`, Resolution Proofs `/resolution-proofs`, Timeline `/stage-tracking`, Messages `/messages`, Pool `/complaint-pool`, Reports `/reports`, Settings `/settings`, Audit Logs `/audit-logs`, API Spec `/api-spec`) |
+| `admin-inbox` | `AdminPortal` initialized directly on the **Messages** route (`/messages`) |
 | `chat` | `UserAdminChatView` (full-page fallback; only if `selectedComplaint` is set) |
 | `discord` | `DiscordReplicaView` |
 
@@ -123,10 +126,9 @@ Because each view unmounts when the tab changes, its local state (wizard step, t
 ### Styling system
 
 1. `tokens.css` — CSS custom properties on `:root`: brand colours (AICTE orange `#F2895E`, action `#C2570C`, navy `#0B2A5B`, blue `#1F5FBF`), neutrals, status pairs, spacing, radius, `--font-scale`. Also the `[data-high-contrast="true"]` override.
-2. `index.css` — imports tokens; base `html/body`, skip-link, `.container`, `.btn*`, `.status-chip`/`.chip-*`, `.card`, `.input-*`, and Tailwind-like utilities (`flex`, `gap-N`, `grid-cols-N`), with a 768 px breakpoint that collapses grids.
-3. Each component ends with an inline `<style>{`...`}</style>` block holding its own class rules. These rules are global while the component is mounted, so new components prefix their selectors (e.g. `.inbox-page-container .btn-sm`).
-
-Gotcha: some class names used in markup (`flex-wrap`, `items-end`, `btn-sm`) are not defined in `index.css`; they only work where a mounted component defines them.
+2. `index.css` — imports tokens, `@tailwind components;`, and `@tailwind utilities;`; base `html/body`, skip-link, `.container`, `.btn*`, `.status-chip`/`.chip-*`, `.card`, `.input-*`, and grid utilities.
+3. `tailwind.config.js` — Tailwind CSS v3 configured with `corePlugins: { preflight: false }`, ensuring Tailwind utility classes are available to all admin components while preserving citizen typography, margins, and button styles.
+4. Each citizen component ends with an inline `<style>{`...`}</style>` block holding its own class rules. Admin components utilize standard Tailwind utility classes alongside `tokens.css`.
 
 `App.css` is a leftover from the Vite template and is not imported.
 

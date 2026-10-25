@@ -59,8 +59,8 @@ Be precise about this in presentations; judges will probe it.
 | OTP delivery / authentication / JWT | **Simulated** | Static demo OTP; tokens are placeholder strings |
 | Voice search | **Simulated** | Fills "Delhi Technological University" after 1.2 s |
 | Discord hub | **Simulated** | Local UI replica, not connected to Discord |
-| Official triage dashboard, nodal-officer screens, role-based access | **Not done** | The role switch now changes the tabs (official sees the Support Inbox), but there is no access control |
-| Reports (bureau / region / institution-wise) | **Not done** | |
+| Official triage dashboard, nodal-officer screens, role-based access | **Working (e-Office Console)** | 15-module administration console in `#admin` with role-based personas (Verma, Rao), review queue, spatial heatmaps, and AI similarity clustering |
+| Reports (bureau / region / institution-wise) | **Working** | Interactive Recharts dashboard in `#admin` (`/reports`) with resolution volume, category breakdowns, and aging analysis |
 | WCAG 2.1 AA / GIGW 3.0 compliance | **Design goal, not audited** | The footer badge states compliance; that claim has not been tested |
 
 ## Scope of this repository

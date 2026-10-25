@@ -29,6 +29,7 @@ Documentation for the AICTE NIVARAN prototype (Smart India Hackathon 2026, probl
 | 10 | [hackathon-evaluation](10-hackathon-evaluation.md) | Mapping to evaluation criteria, pitch points, likely judge questions and answers |
 | 11 | [known-gaps-and-roadmap](11-known-gaps-and-roadmap.md) | Known bugs, tech debt, unused files, roadmap |
 | 12 | [admin-support-inbox](12-admin-support-inbox.md) | Admin Messages / Support Inbox: requirements, design, steps, and what was built |
+| 13 | [enterprise-admin-portal](13-enterprise-admin-portal.md) | 15-Module Enterprise Admin Portal: architecture, module breakdown, and routing |
 | — | [CHANGELOG.md](CHANGELOG.md) | Log of documentation updates tied to code changes |
 
 ## Keeping these docs current

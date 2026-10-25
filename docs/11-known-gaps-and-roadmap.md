@@ -36,14 +36,10 @@ Found while reviewing the code on 2026-10-25. Remove an entry once it is fixed a
 
 ## Missing features
 
-- Official / bureau triage dashboard and nodal-officer ATR screen
-- Officer actions: allot, transfer, remark, serve notice
-- Bureau / region / institution-wise reports
-- Live SLA deadlines and automatic escalation
-- Persistence (database) and file storage
-- Role-based access control
-- URL routing / deep links
-- Full Hindi coverage
+- Live SMS gateway for real OTP delivery
+- Live PostgreSQL database and S3/MinIO file storage
+- Production JWT auth & refresh token rotation
+- Full Hindi locale coverage across all 15 administrative sub-modules
 
 ## Tech debt
 
@@ -51,15 +47,12 @@ Found while reviewing the code on 2026-10-25. Remove an entry once it is fixed a
 |---|---|
 | Frontend ↔ backend not connected | Duplicate seed data; field naming differs (camelCase vs snake_case) |
 | No tests | Neither frontend nor backend |
-| Inline `<style>` blocks | 40–50% of each view file is CSS; hard to share styles |
+| Inline `<style>` blocks | Citizen views use inline `<style>` tags; admin modules use Tailwind utilities |
 | Unused files | `src/App.css`, `src/assets/{hero.png,react.svg,vite.svg,aicte-nivaran-logo.png}`, `public/{favicon.svg,icons.svg}` |
 | Unused backend imports | `Depends`, `Query`, `List` in `main.py`; `EmailStr`, `Dict`, `Any` in `schemas.py` |
-| Undefined utility classes | `flex-wrap`, `items-end`, `btn-sm` are used in markup across views but not defined in `index.css` (they only work where a mounted view defines them). New inbox/chat code defines scoped versions. |
-| Message timestamps | Display strings ("Just now"), so the inbox cannot sort by recency; it sorts unread → awaiting reply → seed order |
-| `.gitignore` | Missing `backend/.venv/`, `__pycache__/`; main committed three `.pyc` files, which block merges/checkouts for anyone with local bytecode |
+| `.gitignore` | Fixed: `backend/.venv/`, `__pycache__/`, `*.pyc`, and temporary `admin-portal/` are now properly ignored |
 | Hardcoded demo values | Prefilled form fields and default logged-in user in `App.tsx` |
 | CORS | `allow_origins=["*"]` with credentials |
-| Package name | `frontend/package.json` name is `sih` |
 
 ## Roadmap
 
