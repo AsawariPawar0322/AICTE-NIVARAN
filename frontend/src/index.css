@@ -1,238 +1,39 @@
-@import "./tokens.css";
+/* ==========================================================================
+   AICTE NIVARAN · Unified Master Stylesheet (index.css)
+   ========================================================================== */
 
-/* Global CSS Reset */
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+@import "./styles/tokens.css";
+@import "./styles/base.css";
+@import "./styles/a11y.css";
+@import "./styles/print.css";
 
-html {
-  font-size: calc(16px * var(--font-scale, 1));
-  scroll-behavior: smooth;
-  -webkit-text-size-adjust: 100%;
-}
-
-body {
-  font-family: var(--font-sans);
-  background-color: var(--color-neutral-100);
-  color: var(--color-neutral-900);
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* Accessibility: Skip Link */
-.skip-link {
-  position: absolute;
-  top: -100px;
-  left: 16px;
-  background: var(--color-navy-900);
-  color: #FFFFFF;
-  padding: 8px 16px;
-  border-radius: var(--radius-sm);
-  z-index: 9999;
-  text-decoration: none;
-  font-weight: 600;
-  transition: top 0.2s ease;
-}
-.skip-link:focus {
-  top: 16px;
-}
-
-/* Typography Hierarchy */
-h1, h2, h3, h4, h5, h6 {
-  color: var(--color-navy-900);
-  font-weight: 700;
-  line-height: 1.25;
-}
-
-h1 { font-size: 1.75rem; }
-h2 { font-size: 1.375rem; }
-h3 { font-size: 1.125rem; }
-p { font-size: 1rem; color: var(--color-neutral-900); }
-small { font-size: 0.875rem; color: var(--color-neutral-600); }
-
-/* Mono element */
-.mono {
-  font-family: var(--font-mono);
-  font-feature-settings: "tnum";
-}
-
-/* Container */
+/* High-priority layout utilities */
 .container {
   width: 100%;
-  max-width: 1200px;
+  max-width: 1440px;
   margin-left: auto;
   margin-right: auto;
-  padding-left: var(--space-4);
-  padding-right: var(--space-4);
+  padding-left: var(--sp-6);
+  padding-right: var(--sp-6);
 }
 
-/* Standard Button Styles */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  padding: 10px 20px;
-  min-height: var(--touch-target-min);
-  font-family: var(--font-sans);
-  font-size: 0.95rem;
-  font-weight: 600;
-  border-radius: var(--radius-sm);
-  border: 1px solid transparent;
-  cursor: pointer;
-  text-decoration: none;
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-}
-
-.btn-primary {
-  background-color: var(--color-action-600);
-  color: #FFFFFF;
-  border-color: var(--color-action-600);
-}
-.btn-primary:hover:not(:disabled) {
-  background-color: var(--color-action-700);
-  border-color: var(--color-action-700);
-}
-
-.btn-secondary {
-  background-color: var(--color-brand-blue-600);
-  color: #FFFFFF;
-  border-color: var(--color-brand-blue-600);
-}
-.btn-secondary:hover:not(:disabled) {
-  background-color: #174aa0;
-}
-
-.btn-outline {
-  background-color: var(--color-surface);
-  color: var(--color-neutral-900);
-  border-color: var(--color-neutral-300);
-}
-.btn-outline:hover:not(:disabled) {
-  background-color: var(--color-neutral-100);
-  border-color: var(--color-neutral-600);
-}
-
-.btn-danger {
-  background-color: var(--color-danger-bg);
-  color: var(--color-danger-text);
-  border-color: var(--color-danger-border);
-}
-.btn-danger:hover:not(:disabled) {
-  background-color: #fee2e2;
-  border-color: #ef4444;
-}
-
-.btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-/* Status Chips */
-.status-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: var(--radius-pill);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  line-height: 1.2;
-  border: 1px solid transparent;
-}
-
-.chip-success {
-  background-color: var(--color-success-bg);
-  color: var(--color-success-text);
-  border-color: var(--color-success-border);
-}
-
-.chip-warning {
-  background-color: var(--color-warning-bg);
-  color: var(--color-warning-text);
-  border-color: var(--color-warning-border);
-}
-
-.chip-danger {
-  background-color: var(--color-danger-bg);
-  color: var(--color-danger-text);
-  border-color: var(--color-danger-border);
-}
-
-.chip-info {
-  background-color: var(--color-info-bg);
-  color: var(--color-info-text);
-  border-color: var(--color-info-border);
-}
-
-/* Card Surface */
+/* Card Elevation & Flat Surface Standard */
 .card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-neutral-300);
-  border-radius: var(--radius-md);
-  padding: var(--space-6);
-  box-shadow: var(--shadow-sm);
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--rad-md);
+  padding: var(--sp-6);
+  box-shadow: var(--shadow-0);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
 }
 
-/* Input Fields */
-.input-label {
-  display: block;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--color-neutral-900);
-  margin-bottom: var(--space-1);
+.card:hover {
+  box-shadow: var(--shadow-1);
 }
 
-.input-helper {
-  font-size: 0.8125rem;
-  color: var(--color-neutral-600);
-  margin-top: var(--space-1);
-}
-
-.input-control {
-  width: 100%;
-  min-height: var(--touch-target-min);
-  padding: 8px 12px;
-  font-family: var(--font-sans);
-  font-size: 0.9375rem;
-  color: var(--color-neutral-900);
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-neutral-300);
-  border-radius: var(--radius-sm);
-  transition: border-color 0.15s ease;
-}
-.input-control:focus {
-  border-color: var(--color-focus);
-}
-
-textarea.input-control {
-  min-height: 100px;
-  resize: vertical;
-}
-
-/* Layout Utilities */
-.flex { display: flex; }
-.flex-col { display: flex; flex-direction: column; }
-.items-center { align-items: center; }
-.justify-between { justify-content: space-between; }
-.justify-center { justify-content: center; }
-.gap-1 { gap: var(--space-1); }
-.gap-2 { gap: var(--space-2); }
-.gap-3 { gap: var(--space-3); }
-.gap-4 { gap: var(--space-4); }
-.gap-6 { gap: var(--space-6); }
-
-.grid { display: grid; }
-.grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
-.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-
-@media (max-width: 768px) {
-  .grid-cols-2, .grid-cols-3, .grid-cols-4 {
-    grid-template-columns: 1fr;
+/* Brand subtitle hiding under 1600px per Defect D4 */
+@media (max-width: 1599px) {
+  .brand-subtitle {
+    display: none !important;
   }
 }
