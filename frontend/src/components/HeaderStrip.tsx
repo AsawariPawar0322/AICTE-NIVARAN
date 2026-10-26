@@ -41,9 +41,11 @@ export const HeaderStrip: React.FC<HeaderStripProps> = ({
       <div className="gov-top-bar">
         <div className="container flex items-center justify-between">
           <div className="gov-emblem-cluster flex items-center gap-2">
-            <div className="national-emblem" aria-hidden="true">
-              🏛️
-            </div>
+            <img 
+              src="/emblem-india.png" 
+              alt="State Emblem of India" 
+              className="h-6 w-auto object-contain brightness-0 invert" 
+            />
             <div className="gov-text">
               <span className="gov-title">{t.govIndia}</span>
               <span className="gov-sub">{t.ministry}</span>
@@ -132,7 +134,14 @@ export const HeaderStrip: React.FC<HeaderStripProps> = ({
             style={{ cursor: 'pointer' }}
             title="Return to AICTE NIVARAN Home / Landing Page"
           >
-            <div className="aicte-logo-box">
+            <div className="aicte-logo-box flex items-center gap-2.5">
+              <img 
+                src="/emblem-india.png" 
+                alt="State Emblem of India" 
+                className="h-14 w-auto object-contain drop-shadow-xs"
+                title="State Emblem of India"
+              />
+              <div className="h-10 w-[1px] bg-[#CBD2DC] hidden sm:block" aria-hidden="true" />
               <img 
                 src="/aicte-nivaran-logo.png" 
                 alt="AICTE NIVARAN Official Emblem" 

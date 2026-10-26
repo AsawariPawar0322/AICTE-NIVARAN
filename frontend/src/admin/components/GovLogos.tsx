@@ -2,60 +2,17 @@ import React from 'react';
 
 /**
  * National Emblem of India (State Emblem - Lion Capital of Ashoka with Satyameva Jayate)
- * Scalable vector SVG formatted with authentic government iconography.
+ * Renders the authentic official high-resolution government insignia.
  */
-export const NationalEmblem: React.FC<{ className?: string }> = ({ className = 'w-10 h-12' }) => (
-  <svg
-    viewBox="0 0 100 120"
-    className={className}
-    fill="currentColor"
-    aria-label="State Emblem of India"
-    role="img"
-  >
-    {/* Central Ashoka Lion Profile & Pedestal Silhouette */}
-    <g fill="currentColor">
-      {/* Central Lion Head & Mane */}
-      <path d="M50 8 C44 8 40 12 39 16 C37 14 34 14 32 16 C30 18 31 22 33 24 C31 25 29 27 29 30 C29 34 32 37 36 38 C35 40 35 43 36 46 C38 52 44 56 50 56 C56 52 62 46 64 46 C65 43 65 40 64 38 C68 37 71 34 71 30 C71 27 69 25 67 24 C69 22 70 18 68 16 C66 14 63 14 61 16 C60 12 56 8 50 8 Z" />
-      {/* Left Lion Mane Profile */}
-      <path d="M30 28 C25 28 20 32 18 36 C16 40 17 44 20 46 C18 48 17 51 18 54 C20 59 25 62 30 63 C32 63 35 62 37 60 C36 57 36 53 37 50 C34 49 32 46 32 43 C30 42 29 39 30 36 C28 35 28 32 30 28 Z" />
-      {/* Right Lion Mane Profile */}
-      <path d="M70 28 C75 28 80 32 82 36 C84 40 83 44 80 46 C82 48 83 51 82 54 C80 59 75 62 70 63 C68 63 65 62 63 60 C64 57 64 53 63 50 C66 49 68 46 68 43 C70 42 71 39 70 36 C72 35 72 32 70 28 Z" />
-      {/* Pedestal / Abacus Upper Tier */}
-      <rect x="22" y="66" width="56" height="5" rx="1.5" />
-      
-      {/* Ashoka Chakra in Center of Abacus */}
-      <circle cx="50" cy="78" r="7" fill="none" stroke="currentColor" strokeWidth="1.5" />
-      <circle cx="50" cy="78" r="1.5" fill="currentColor" />
-      {/* 24 Spoke representation */}
-      <path d="M50 71 L50 85 M43 78 L57 78 M45 73 L55 83 M45 83 L55 73" stroke="currentColor" strokeWidth="0.8" />
-
-      {/* Galloping Horse (Left) & Bull (Right) representations */}
-      {/* Left Horse */}
-      <path d="M28 75 C25 74 24 76 25 78 C26 80 29 81 32 80 C33 79 34 77 33 75 Z" />
-      {/* Right Bull */}
-      <path d="M72 75 C75 74 76 76 75 78 C74 80 71 81 68 80 C67 79 66 77 67 75 Z" />
-
-      {/* Pedestal Lower Base */}
-      <rect x="18" y="86" width="64" height="4" rx="1" />
-      <rect x="24" y="91" width="52" height="3" rx="0.5" />
-
-      {/* Bell Capital / Lotus Base */}
-      <path d="M30 95 C38 99 44 100 50 100 C56 100 62 99 70 95 C68 98 60 102 50 102 C40 102 32 98 30 95 Z" />
-
-      {/* Satyameva Jayate Script (सत्यमेव जयते) */}
-      <text
-        x="50"
-        y="114"
-        textAnchor="middle"
-        fontSize="8.5"
-        fontWeight="bold"
-        fontFamily="sans-serif, Noto Sans Devanagari"
-        letterSpacing="0.8"
-      >
-        सत्यमेव जयते
-      </text>
-    </g>
-  </svg>
+export const NationalEmblem: React.FC<{ className?: string; alt?: string }> = ({
+  className = 'w-9 h-12',
+  alt = 'State Emblem of India',
+}) => (
+  <img
+    src="/emblem-india.png"
+    alt={alt}
+    className={`object-contain ${className}`}
+  />
 );
 
 /**

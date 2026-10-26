@@ -67,6 +67,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => setActiveTab('home')}
             aria-label="AICTE NIVARAN — go to home"
           >
+            <img src="/emblem-india.png" alt="State Emblem of India" className="h-6 w-auto object-contain brightness-0 invert opacity-90 hidden sm:block" />
             <img src="/aicte-nivaran-logo.png" alt="" className="nb-logo-img" aria-hidden="true" />
             <span className="nb-logo-text">NIVARAN</span>
           </button>

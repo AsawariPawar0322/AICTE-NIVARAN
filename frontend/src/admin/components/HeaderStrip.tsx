@@ -136,7 +136,7 @@ export const HeaderStrip: React.FC = () => {
           <div className="flex items-center gap-3 md:gap-4">
             {/* Lion Capital of Ashoka (National Emblem) */}
             <div className="flex flex-col items-center flex-shrink-0 text-[#0B2A5B]" title="State Emblem of India">
-              <NationalEmblem className="w-9 h-11 md:w-11 md:h-13" />
+              <NationalEmblem className="h-12 md:h-14 w-auto" />
             </div>
 
             {/* Vertical Divider */}

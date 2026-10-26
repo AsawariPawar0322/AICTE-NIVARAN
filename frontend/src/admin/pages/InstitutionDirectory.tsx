@@ -5,7 +5,11 @@ import { Institution, InstitutionScorecardItem } from '../types';
 import { Button } from '../design-system/Button';
 import { Modal } from '../design-system/Modal';
 import { useApp } from '../context/AppContext';
-import { downloadSyntheticDocument } from '../utils/documentDownloader';
+import {
+  downloadSyntheticDocument,
+  downloadScorecardDossierPdf,
+  downloadInspectionOrderPdf,
+} from '../utils/documentDownloader';
 import {
   Building2,
   Search,
@@ -787,12 +791,11 @@ export const InstitutionDirectory: React.FC = () => {
                 variant="secondary"
                 size="sm"
                 onClick={() => {
-                  downloadSyntheticDocument({
-                    fileName: `AICTE_Scorecard_Dossier_${selectedScorecard.permanent_id}.pdf`,
-                    title: `AICTE Scorecard Dossier: ${selectedScorecard.institution_name}`,
-                    institutionName: selectedScorecard.institution_name,
-                    caseId: `PID-${selectedScorecard.permanent_id}`,
-                    details: `Inspection Priority Score: ${selectedScorecard.inspection_priority_score}/100\nPriority Tier: ${selectedScorecard.priority_tier}\nRecommended Action: ${selectedScorecard.recommended_action_label}\n\nREASONS:\n${selectedScorecard.explainable_reasons.join('\n')}`,
+                  downloadScorecardDossierPdf(selectedScorecard);
+                  addToast({
+                    type: 'success',
+                    title: 'Audit Dossier Downloaded',
+                    message: `Official AICTE Audit Dossier for ${selectedScorecard.institution_name} generated as signed PDF.`,
                   });
                 }}
                 className="flex items-center gap-1.5 text-xs"
@@ -890,12 +893,17 @@ export const InstitutionDirectory: React.FC = () => {
                 variant="secondary"
                 size="sm"
                 onClick={() => {
-                  downloadSyntheticDocument({
-                    fileName: `AICTE_Inspection_Order_${selectedScorecard.permanent_id}.pdf`,
-                    title: `Official Regulatory Inspection Order: ${inspectionType}`,
-                    institutionName: selectedScorecard.institution_name,
-                    caseId: `PID-${selectedScorecard.permanent_id}`,
-                    details: `Inspection Type: ${inspectionType}\nTarget Date: ${targetDate}\nTeam Lead: ${officerName}\n\nTERMS OF REFERENCE:\n${termsOfReference}`,
+                  downloadInspectionOrderPdf({
+                    scorecard: selectedScorecard,
+                    inspectionType,
+                    targetDate,
+                    officerName,
+                    termsOfReference,
+                  });
+                  addToast({
+                    type: 'success',
+                    title: 'Statutory Order Downloaded',
+                    message: `Official AICTE Regulatory Inspection Order generated as signed PDF.`,
                   });
                 }}
                 className="flex items-center gap-1.5 text-xs"
