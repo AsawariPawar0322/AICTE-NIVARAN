@@ -49,10 +49,10 @@ export const TopBar: React.FC = () => {
   const currentTitle = breadcrumbs[breadcrumbs.length - 1]?.label || t('nav_dashboard');
 
   return (
-    <div className="bg-white border-b border-[#CBD2DC] px-4 py-2.5 flex flex-col md:flex-row md:items-center justify-between gap-3 min-h-[58px] select-none">
+    <div className="bg-white border-b border-[#CBD2DC] px-4 md:px-6 py-2.5 flex flex-wrap md:flex-nowrap items-center justify-between gap-3 min-h-[58px] select-none shadow-xs">
       {/* Title, Ministry Desk Tag & Breadcrumbs */}
-      <div>
-        <div className="flex items-center gap-2 mb-1">
+      <div className="flex-shrink-0">
+        <div className="flex items-center gap-2 mb-0.5">
           <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded bg-[#0B2A5B] text-white font-mono flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
             AICTE NIVARAN · Govt. of India
@@ -86,9 +86,9 @@ export const TopBar: React.FC = () => {
       </div>
 
       {/* Global Search & Official Officer Tools */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5 ml-auto flex-shrink-0">
         {/* Global Registry Search Bar */}
-        <form onSubmit={handleSearchSubmit} className="relative w-60 md:w-72">
+        <form onSubmit={handleSearchSubmit} className="relative w-48 sm:w-64 md:w-72">
           <label htmlFor="global-search" className="sr-only">
             {t('search_placeholder')}
           </label>
@@ -98,7 +98,7 @@ export const TopBar: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t('search_placeholder')}
-            className="w-full h-8 pl-8 pr-3 text-xs bg-[#F8FAFC] border border-[#CBD2DC] rounded-[4px] text-[#1E293B] placeholder-[#64748B] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#1D4ED8]"
+            className="w-full h-8 pl-8 pr-3 text-xs bg-[#F8FAFC] border border-[#CBD2DC] rounded text-[#1E293B] placeholder-[#64748B] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1D4ED8] focus:border-[#1D4ED8] transition-all"
           />
           <Search className="w-3.5 h-3.5 text-[#64748B] absolute left-2.5 top-2.5" aria-hidden="true" />
         </form>
@@ -107,7 +107,7 @@ export const TopBar: React.FC = () => {
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className="p-1.5 rounded-[4px] border border-[#CBD2DC] text-[#1E293B] bg-[#F8FAFC] hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#1D4ED8] relative"
+            className="w-8 h-8 rounded border border-[#CBD2DC] text-[#1E293B] bg-[#F8FAFC] hover:bg-white flex items-center justify-center transition-colors relative"
             aria-label="View official notifications"
             aria-expanded={showNotifications}
           >

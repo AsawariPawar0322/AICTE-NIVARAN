@@ -43,95 +43,11 @@ const RouteRenderer: React.FC = () => {
           </div>
         }
       >
-        <div style={{ position: 'relative', width: '100%', minHeight: '100vh' }}>
-          {/* Official Workspace Header Strip & Mode Toggle */}
-          <div
-            style={{
-              backgroundColor: '#0F172A',
-              color: '#F8FAFC',
-              padding: '6px 20px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              fontSize: '12px',
-              borderBottom: '1px solid #1E293B',
-              zIndex: 50,
-              flexWrap: 'wrap',
-              gap: '8px'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ backgroundColor: '#C2410C', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontWeight: 700, fontSize: '10px', letterSpacing: '0.04em' }}>
-                OFFICIAL WORKSPACE
-              </span>
-              <span style={{ color: '#CBD5E1' }}>
-                Signed in as: <strong style={{ color: '#fff' }}>{currentUser?.name || 'Dr. Ramesh Chandra Verma (PGRC Director)'}</strong>
-              </span>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ color: '#94A3B8', fontSize: '11px' }}>Mode:</span>
-              <button
-                type="button"
-                onClick={() => setAdminViewMode('enterprise')}
-                style={{
-                  padding: '3px 10px',
-                  borderRadius: '4px',
-                  fontSize: '11px',
-                  fontWeight: adminViewMode === 'enterprise' ? 700 : 500,
-                  backgroundColor: adminViewMode === 'enterprise' ? '#1E293B' : 'transparent',
-                  color: adminViewMode === 'enterprise' ? '#38BDF8' : '#94A3B8',
-                  border: adminViewMode === 'enterprise' ? '1px solid #38BDF8' : '1px solid transparent',
-                  cursor: 'pointer'
-                }}
-              >
-                Enterprise 15-Module (Live Backend &amp; Scorecard)
-              </button>
-              <button
-                type="button"
-                onClick={() => setAdminViewMode('console')}
-                style={{
-                  padding: '3px 10px',
-                  borderRadius: '4px',
-                  fontSize: '11px',
-                  fontWeight: adminViewMode === 'console' ? 700 : 500,
-                  backgroundColor: adminViewMode === 'console' ? '#1E293B' : 'transparent',
-                  color: adminViewMode === 'console' ? '#38BDF8' : '#94A3B8',
-                  border: adminViewMode === 'console' ? '1px solid #38BDF8' : '1px solid transparent',
-                  cursor: 'pointer'
-                }}
-              >
-                Redressal Console (13 Screens)
-              </button>
-              <button
-                type="button"
-                onClick={() => navigateToTab('home')}
-                style={{
-                  padding: '3px 10px',
-                  borderRadius: '4px',
-                  fontSize: '11px',
-                  backgroundColor: 'rgba(239, 68, 68, 0.15)',
-                  color: '#FCA5A5',
-                  border: '1px solid rgba(239, 68, 68, 0.4)',
-                  cursor: 'pointer',
-                  marginLeft: '8px'
-                }}
-              >
-                Exit to Citizen Portal ✕
-              </button>
-            </div>
-          </div>
-
-          {adminViewMode === 'enterprise' ? (
-            <AdminPortal
-              officerInfo={currentUser}
-              onExitAdmin={() => navigateToTab('home')}
-              initialRoute={activeTab === 'admin-inbox' ? '/messages' : '/'}
-            />
-          ) : (
-            <AdminConsoleView />
-          )}
-        </div>
+        <AdminPortal
+          officerInfo={currentUser}
+          onExitAdmin={() => navigateToTab('home')}
+          initialRoute={activeTab === 'admin-inbox' ? '/messages' : '/'}
+        />
       </Suspense>
     );
   }

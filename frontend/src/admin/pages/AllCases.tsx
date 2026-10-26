@@ -283,12 +283,12 @@ export const AllCases: React.FC = () => {
       </div>
 
       {/* Main Cases Table */}
-      <div className="bg-white border border-[#CBD2DC] rounded-[8px] overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+      <div className="bg-white border border-[#CBD2DC] rounded-lg shadow-xs overflow-hidden">
+        <div className="overflow-x-auto w-full">
+          <table className="w-full min-w-[1100px] text-left border-collapse text-xs">
             <thead>
-              <tr className="border-b border-[#CBD2DC] bg-[#F3F5F8] text-[#4B5565] uppercase font-semibold">
-                <th className="py-2.5 px-3">
+              <tr className="border-b border-[#CBD2DC] bg-[#F8FAFC] text-[#475569] uppercase font-bold tracking-wider text-[11px]">
+                <th className="py-3 px-4">
                   <button
                     onClick={() => handleSort('id')}
                     className="flex items-center gap-1 hover:text-[#1A1F2B]"
@@ -297,9 +297,9 @@ export const AllCases: React.FC = () => {
                     <ArrowUpDown className="w-3 h-3" />
                   </button>
                 </th>
-                <th className="py-2.5 px-3">Subject &amp; Category</th>
-                <th className="py-2.5 px-3">Institution &amp; Region</th>
-                <th className="py-2.5 px-3">
+                <th className="py-3 px-4">Subject &amp; Category</th>
+                <th className="py-3 px-4">Institution &amp; Region</th>
+                <th className="py-3 px-4">
                   <button
                     onClick={() => handleSort('status')}
                     className="flex items-center gap-1 hover:text-[#1A1F2B]"
@@ -308,7 +308,7 @@ export const AllCases: React.FC = () => {
                     <ArrowUpDown className="w-3 h-3" />
                   </button>
                 </th>
-                <th className="py-2.5 px-3">
+                <th className="py-3 px-4">
                   <button
                     onClick={() => handleSort('urgency')}
                     className="flex items-center gap-1 hover:text-[#1A1F2B]"
@@ -317,8 +317,8 @@ export const AllCases: React.FC = () => {
                     <ArrowUpDown className="w-3 h-3" />
                   </button>
                 </th>
-                <th className="py-2.5 px-3">Bureau &amp; Officer</th>
-                <th className="py-2.5 px-3">
+                <th className="py-3 px-4">Bureau &amp; Officer</th>
+                <th className="py-3 px-4">
                   <button
                     onClick={() => handleSort('slaDeadline')}
                     className="flex items-center gap-1 hover:text-[#1A1F2B]"
@@ -327,22 +327,22 @@ export const AllCases: React.FC = () => {
                     <ArrowUpDown className="w-3 h-3" />
                   </button>
                 </th>
-                <th className="py-2.5 px-3 text-right">Action</th>
+                <th className="py-3 px-4 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#CBD2DC]">
               {complaints.map((c) => (
-                <tr key={c.id} className="hover:bg-[#F3F5F8] transition-colors">
-                  <td className="py-3 px-3 font-mono font-bold text-[#0B2A5B] whitespace-nowrap">
+                <tr key={c.id} className="hover:bg-[#F8FAFC] transition-colors">
+                  <td className="py-3.5 px-4 font-mono font-bold text-[#0B2A5B] whitespace-nowrap">
                     <Link
                       to={`/cases/${c.id}`}
-                      className="hover:text-[#C2570C] hover:underline flex items-center gap-1"
+                      className="hover:text-[#C2570C] inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#F1F5F9] border border-[#CBD2DC]"
                     >
                       {c.id}
-                      <ExternalLink className="w-3 h-3 text-[#4B5565]" />
+                      <ExternalLink className="w-3 h-3 text-[#64748B]" />
                     </Link>
                   </td>
-                  <td className="py-3 px-3 max-w-sm">
+                  <td className="py-3.5 px-4 max-w-sm">
                     <div className="font-semibold text-[#1A1F2B] truncate" title={c.title}>
                       {c.title}
                     </div>
@@ -360,48 +360,48 @@ export const AllCases: React.FC = () => {
                       )}
                     </div>
                   </td>
-                  <td className="py-3 px-3">
-                    <div className="font-medium text-[#1A1F2B] truncate max-w-[200px]">
+                  <td className="py-3.5 px-4">
+                    <div className="font-semibold text-[#1A1F2B] truncate max-w-[200px]" title={c.institutionName}>
                       {c.institutionName}
                     </div>
-                    <div className="text-[11px] font-mono text-[#4B5565]">
+                    <div className="text-[11px] font-mono text-[#64748B]">
                       {c.institutionPermanentId} · {c.city}, {c.state}
                     </div>
                   </td>
-                  <td className="py-3 px-3 whitespace-nowrap">
+                  <td className="py-3.5 px-4 whitespace-nowrap">
                     <StatusChip status={c.status} isOverdue={c.isOverdue} overdueDays={c.overdueDays} size="sm" />
                   </td>
-                  <td className="py-3 px-3 whitespace-nowrap">
+                  <td className="py-3.5 px-4 whitespace-nowrap">
                     <UrgencyBadge urgency={c.urgency} size="sm" />
                   </td>
-                  <td className="py-3 px-3">
-                    <div className="text-[#1A1F2B] truncate max-w-[160px] font-medium">
+                  <td className="py-3.5 px-4">
+                    <div className="text-[#1A1F2B] truncate max-w-[160px] font-semibold">
                       {c.assignedBureau}
                     </div>
-                    <div className="text-[11px] text-[#4B5565]">
+                    <div className="text-[11px] text-[#64748B]">
                       {c.assignedOfficerName || 'Unassigned (Triage)'}
                     </div>
                   </td>
-                  <td className="py-3 px-3 whitespace-nowrap font-mono">
+                  <td className="py-3.5 px-4 whitespace-nowrap font-mono">
                     <div>{c.slaDeadline.split('T')[0]}</div>
                     {c.isOverdue ? (
-                      <span className="text-[#B91C1C] font-bold text-[11px]">
+                      <span className="inline-flex items-center gap-1 text-[#B91C1C] font-bold text-[11px] bg-red-50 px-1.5 py-0.2 rounded border border-red-200">
                         Overdue by {c.overdueDays}d
                       </span>
                     ) : (
-                      <span className="text-[11px] text-[#166534]">
+                      <span className="inline-flex items-center gap-1 text-[11px] text-[#166534] bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
                         {c.daysRemaining}d remaining
                       </span>
                     )}
                   </td>
-                  <td className="py-3 px-3 text-right whitespace-nowrap">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => navigate(`/cases/${c.id}`)}
+                  <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                    <Link
+                      to={`/cases/${c.id}`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-white border border-[#CBD2DC] hover:border-[#0B2A5B] hover:bg-[#F8FAFC] text-[#0B2A5B] font-semibold text-xs shadow-xs transition-colors"
                     >
                       View Detail
-                    </Button>
+                      <ExternalLink className="w-3 h-3 text-[#64748B]" />
+                    </Link>
                   </td>
                 </tr>
               ))}

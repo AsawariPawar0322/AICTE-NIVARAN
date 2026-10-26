@@ -95,9 +95,9 @@ export const StatusChip: React.FC<StatusChipProps> = ({
   const isSmall = size === 'sm';
 
   return (
-    <div className="inline-flex items-center gap-1.5 flex-wrap">
+    <div className="inline-flex items-center gap-1.5 flex-nowrap whitespace-nowrap">
       <span
-        className={`inline-flex items-center gap-1.5 font-medium border rounded-full ${bg} ${text} ${border} ${
+        className={`inline-flex items-center gap-1.5 font-medium border rounded-full whitespace-nowrap ${bg} ${text} ${border} ${
           isSmall ? 'text-xs px-2 py-0.5' : 'text-xs px-2.5 py-1'
         } ${className}`}
       >

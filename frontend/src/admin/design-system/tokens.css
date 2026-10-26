@@ -1,7 +1,3 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 :root {
   --color-action: #C2570C;
   --color-action-hover: #9A4509;
