@@ -49,7 +49,7 @@ export const TopBar: React.FC = () => {
   const currentTitle = breadcrumbs[breadcrumbs.length - 1]?.label || t('nav_dashboard');
 
   return (
-    <div className="bg-white border-b border-[#CBD2DC] px-4 md:px-6 py-2.5 flex flex-wrap md:flex-nowrap items-center justify-between gap-3 min-h-[58px] select-none shadow-xs">
+    <div className="bg-white border-b-2 border-[#CBD2DC] px-4 md:px-6 py-2.5 flex flex-wrap md:flex-nowrap items-center justify-between gap-3 min-h-[58px] select-none shadow-sm">
       {/* Title, Ministry Desk Tag & Breadcrumbs */}
       <div className="flex-shrink-0">
         <div className="flex items-center gap-2 mb-0.5">

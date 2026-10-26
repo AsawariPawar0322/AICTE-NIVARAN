@@ -372,6 +372,20 @@ export const Header: React.FC = () => {
           )}
         </div>
       </nav>
+
+      {/* 5. Distinguishing Accent Line Below Header */}
+      <div
+        className="header-bottom-line"
+        style={{
+          height: '4px',
+          width: '100%',
+          backgroundColor: 'var(--action, #C2570C)',
+          boxShadow: '0 2px 6px rgba(0, 0, 0, 0.22)',
+          position: 'relative',
+          zIndex: 10
+        }}
+        role="presentation"
+      />
     </header>
   );
 };

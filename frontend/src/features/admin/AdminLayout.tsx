@@ -284,7 +284,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
         <header
           style={{
             backgroundColor: 'var(--surface)',
-            borderBottom: '1px solid var(--border)',
+            borderBottom: '2px solid var(--border)',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
             padding: 'var(--sp-3) var(--sp-6)',
             display: 'flex',
             justifyContent: 'space-between',
