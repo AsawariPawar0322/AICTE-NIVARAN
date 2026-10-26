@@ -234,18 +234,21 @@ export const InstitutionDirectory: React.FC = () => {
 
         {/* Search & Filter Strip */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-3 border-t border-[#CBD2DC]">
-          <form onSubmit={handleSearchSubmit} className="flex-1 relative">
-            <input
-              type="search"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Search by Institution Name, City, or AICTE Permanent ID (e.g. 1-10928341, 1-10294821)..."
-              className="w-full h-9 pl-9 pr-20 text-xs bg-[#F3F5F8] border border-[#CBD2DC] rounded-[4px] text-[#1A1F2B] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#1D4ED8]"
-            />
-            <Search className="w-4 h-4 text-[#4B5565] absolute left-2.5 top-2.5" />
+          {/* Search Bar - Flexbox Inline Container to Prevent Overlap */}
+          <form onSubmit={handleSearchSubmit} className="flex-1 flex items-center gap-2">
+            <div className="relative flex-1 min-w-0">
+              <input
+                type="search"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Search by Institution Name, City, or AICTE Permanent ID (e.g. 1-10928341, 1-10294821)..."
+                className="w-full h-9 pl-9 pr-3 text-xs bg-[#F3F5F8] border border-[#CBD5E1] rounded-[4px] text-[#0F172A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#1D4ED8] transition-all duration-200 min-w-0"
+              />
+              <Search className="w-4 h-4 text-[#475569] absolute left-2.5 top-2.5 pointer-events-none" />
+            </div>
             <button
               type="submit"
-              className="absolute right-1 top-1 h-7 px-3 bg-[#C2570C] text-white rounded-[3px] text-xs font-semibold hover:bg-[#9A4509]"
+              className="h-9 px-3.5 bg-[#C2410C] hover:bg-[#9A3412] text-white rounded-[4px] text-xs font-semibold flex-shrink-0 transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#1D4ED8] focus-visible:outline-offset-2"
             >
               Search
             </button>

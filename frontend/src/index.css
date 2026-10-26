@@ -13,40 +13,70 @@
 @tailwind utilities;
 
 :root {
-  /* Spacing Scale (4px standard) */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-8: 32px;
-  --space-12: 48px;
+  /* ==========================================================================
+     1. Standardized 8px Grid Spacing Scale
+     ========================================================================== */
+  --space-0: 0px;
+  --space-half: 4px;   /* 0.25rem - Micro alignment */
+  --space-1: 8px;      /* 0.5rem - 1x Grid Unit */
+  --space-2: 16px;     /* 1.0rem - 2x Grid Unit */
+  --space-3: 24px;     /* 1.5rem - 3x Grid Unit */
+  --space-4: 32px;     /* 2.0rem - 4x Grid Unit */
+  --space-5: 40px;     /* 2.5rem - 5x Grid Unit */
+  --space-6: 48px;     /* 3.0rem - 6x Grid Unit */
+  --space-8: 64px;     /* 4.0rem - 8x Grid Unit */
 
-  /* Enterprise Admin & Tailwind Color Tokens */
-  --color-action: #C2570C;
-  --color-action-hover: #9A4509;
-  --color-brand-orange: #F2895E;
-  --color-brand-blue: #1F5FBF;
+  /* ==========================================================================
+     2. Standardized Accessible Color Palette (WCAG AA Compliant >= 4.5:1)
+     ========================================================================== */
+  --bg-primary: #F8FAFC;
+  --bg-secondary: #F1F5F9;
+  --bg-surface: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --bg-dark: #071D3F;
+  --bg-navy: #0B2A5B;
+
+  --text-primary: #0F172A;     /* Contrast on white: 16.5:1 */
+  --text-secondary: #334155;   /* Contrast on white: 9.6:1 */
+  --text-muted: #475569;       /* Contrast on white: 5.8:1 */
+  --text-inverse: #FFFFFF;     /* Contrast on dark: 14.8:1 */
+
+  --border-color: #CBD5E1;
+  --border-light: #E2E8F0;
+  --border-focus: #1D4ED8;
+
+  --accent-color: #C2410C;     /* Indian Saffron/Amber - contrast 5.2:1 */
+  --accent-hover: #9A3412;
+  --accent-tint: #FFEDD5;
+
+  --brand-navy: #0B2A5B;
+  --brand-blue: #1F5FBF;
+  --brand-blue-hover: #174A96;
+  --brand-orange: #F2895E;
+
+  --color-action: var(--accent-color);
+  --color-action-hover: var(--accent-hover);
+  --color-brand-orange: var(--brand-orange);
+  --color-brand-blue: var(--brand-blue);
   --color-brand-blue-100: #E6EEF9;
-  --color-navy: #0B2A5B;
-  --color-text: #1A1F2B;
-  --color-text-muted: #4B5565;
-  --color-border: #CBD2DC;
-  --color-bg: #F3F5F8;
-  --color-surface: #FFFFFF;
-  --color-focus: #1D4ED8;
+  --color-navy: var(--brand-navy);
+  --color-text: var(--text-primary);
+  --color-text-muted: var(--text-muted);
+  --color-border: var(--border-color);
+  --color-bg: var(--bg-primary);
+  --color-surface: var(--bg-surface);
+  --color-focus: var(--border-focus);
 
-  --color-neutral-100: #F3F5F8;
-  --color-neutral-200: #E5E9F0;
-  --color-neutral-300: #CBD2DC;
-  --color-neutral-400: #9AA4B2;
-  --color-neutral-600: #4B5565;
-  --color-neutral-700: #333D4B;
-  --color-neutral-900: #1A1F2B;
+  --color-neutral-100: #F8FAFC;
+  --color-neutral-200: #F1F5F9;
+  --color-neutral-300: #CBD5E1;
+  --color-neutral-400: #94A3B8;
+  --color-neutral-600: #475569;
+  --color-neutral-700: #334155;
+  --color-neutral-900: #0F172A;
 
   --color-success-bg: #DCFCE7;
-  --color-success-text: #166534;
+  --color-success-text: #15803D;
   --color-success-border: #86EFAC;
 
   --color-warning-bg: #FEF3C7;
@@ -72,18 +102,76 @@
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
 }
 
-/* Global Reset Tweaks */
+/* ==========================================================================
+   3. Global Box Model & Mobile Overflow Protection
+   ========================================================================== */
 *, *::before, *::after {
   box-sizing: border-box;
 }
 
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 body {
-  font-family: var(--font-sans);
-  background-color: var(--color-bg, #F3F5F8);
-  color: var(--color-text, #1A1F2B);
+  font-family: var(--font-sans, 'Inter', -apple-system, BlinkMacSystemFont, sans-serif);
+  background-color: var(--bg-primary, #F8FAFC);
+  color: var(--text-primary, #0F172A);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Wide containers and media never exceed 100% */
+.container,
+main,
+table,
+.card,
+.overflow-x-auto {
+  max-width: 100%;
+}
+
+img, svg, video, canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ==========================================================================
+   4. Universal Interactive States (0.2s Ease Transition & Focus Ring)
+   ========================================================================== */
+a, button, input, select, textarea {
+  transition: all 0.2s ease;
+}
+
+button {
+  cursor: pointer;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--border-focus, #1D4ED8);
+  outline-offset: 2px;
+}
+
+/* Inline Flex Search Containers to Prevent Overlaps */
+.search-inline-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.search-inline-input {
+  flex: 1 1 0%;
+  min-width: 120px;
+  width: 100%;
 }
 
 /* High-priority layout utilities */
@@ -117,57 +205,83 @@ body {
   }
 }
 
+/* ==========================================================================
+   5. Sidebar Sticky & Mobile Media Queries (< 768px Single-Column Stacking)
+   ========================================================================== */
+.sticky-sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+@media (max-width: 767px) {
+  .sticky-sidebar {
+    position: relative;
+    top: auto;
+    height: auto;
+    width: 100% !important;
+    max-width: 100%;
+    overflow-y: visible;
+  }
+
+  .admin-layout-container,
+  .multi-column-layout {
+    flex-direction: column !important;
+  }
+}
+
 /* Button Component Utilities */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 8px 16px;
+  gap: var(--space-1, 8px);
+  padding: var(--space-1, 8px) var(--space-2, 16px);
   font-size: 0.875rem;
   font-weight: 600;
-  border-radius: 4px;
+  border-radius: var(--radius-sm, 4px);
   border: 1px solid transparent;
   cursor: pointer;
   text-decoration: none;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
   white-space: nowrap;
 }
 
 .btn-primary {
-  background-color: #C2570C;
+  background-color: var(--accent-color, #C2410C);
   color: #FFFFFF !important;
-  border-color: #C2570C;
+  border-color: var(--accent-color, #C2410C);
 }
 .btn-primary:hover:not(:disabled) {
-  background-color: #9A4509;
-  border-color: #9A4509;
+  background-color: var(--accent-hover, #9A3412);
+  border-color: var(--accent-hover, #9A3412);
 }
 
 .btn-secondary {
-  background-color: #1F5FBF;
+  background-color: var(--brand-blue, #1F5FBF);
   color: #FFFFFF !important;
-  border-color: #1F5FBF;
+  border-color: var(--brand-blue, #1F5FBF);
 }
 .btn-secondary:hover:not(:disabled) {
-  background-color: #174AA0;
-  border-color: #174AA0;
+  background-color: var(--brand-blue-hover, #174A96);
+  border-color: var(--brand-blue-hover, #174A96);
 }
 
 .btn-outline {
-  background-color: #FFFFFF;
-  color: #1E293B !important;
-  border-color: #CBD2DC;
+  background-color: var(--bg-surface, #FFFFFF);
+  color: var(--text-primary, #0F172A) !important;
+  border-color: var(--border-color, #CBD5E1);
 }
 .btn-outline:hover:not(:disabled) {
-  background-color: #F8FAFC;
-  border-color: #94A3B8;
+  background-color: var(--bg-secondary, #F1F5F9);
+  border-color: var(--text-muted, #475569);
 }
 
 .btn-danger {
-  background-color: #FEE2E2;
-  color: #B91C1C !important;
-  border-color: #FCA5A5;
+  background-color: var(--color-danger-bg, #FEE2E2);
+  color: var(--color-danger-text, #B91C1C) !important;
+  border-color: var(--color-danger-border, #FCA5A5);
 }
 .btn-danger:hover:not(:disabled) {
   background-color: #FECACA;

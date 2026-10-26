@@ -101,10 +101,14 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: 'calc(100vh - 120px)', backgroundColor: 'var(--bg)' }}>
-      {/* ── 1. Fixed 280px Dark-Navy Sidebar ── */}
+    <div className="admin-layout-container flex flex-col md:flex-row w-full max-w-full" style={{ minHeight: 'calc(100vh - 120px)', backgroundColor: 'var(--bg)' }}>
+      {/* ── 1. Sticky 280px Dark-Navy Sidebar ── */}
       <aside
+        className="admin-sidebar sticky-sidebar"
         style={{
+          position: 'sticky',
+          top: 0,
+          height: '100vh',
           width: collapsed ? '72px' : '280px',
           backgroundColor: 'var(--navy-900)',
           color: '#FFFFFF',
@@ -113,7 +117,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           flexDirection: 'column',
           flexShrink: 0,
           borderRight: '1px solid rgba(255, 255, 255, 0.15)',
-          overflowY: 'auto'
+          overflowY: 'auto',
+          zIndex: 30
         }}
       >
         {/* Sidebar Header */}

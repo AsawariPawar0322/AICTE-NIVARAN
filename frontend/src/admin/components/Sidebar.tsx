@@ -73,13 +73,13 @@ export const Sidebar: React.FC = () => {
 
   return (
     <aside
-      className={`bg-white border-r border-[#CBD2DC] transition-all duration-200 flex flex-col flex-shrink-0 select-none ${
-        isSidebarCollapsed ? 'w-16' : 'w-64'
-      }`}
+      className={`bg-white border-b md:border-b-0 md:border-r border-[#CBD5E1] transition-all duration-200 flex flex-col flex-shrink-0 select-none w-full sticky-sidebar ${
+        isSidebarCollapsed ? 'md:w-16' : 'md:w-64'
+      } z-30`}
       aria-label="Official Sidebar Navigation"
     >
       {/* Sidebar Header / Toggle */}
-      <div className="h-12 border-b border-[#CBD2DC] px-2.5 flex items-center justify-between bg-[#F8FAFC]">
+      <div className="h-12 border-b border-[#CBD5E1] px-2.5 flex items-center justify-between bg-[#F8FAFC]">
         {!isSidebarCollapsed ? (
           <div className="flex items-center gap-2 overflow-hidden">
             <AicteNivaranLogo className="w-7 h-7 flex-shrink-0" />
@@ -87,7 +87,7 @@ export const Sidebar: React.FC = () => {
               <span className="text-[11px] font-black text-[#0B2A5B] tracking-wide uppercase font-sans truncate">
                 AICTE NIVARAN
               </span>
-              <span className="text-[9px] text-[#C2570C] font-semibold truncate">
+              <span className="text-[9px] text-[#C2410C] font-semibold truncate">
                 Official Admin Desk
               </span>
             </div>
@@ -99,7 +99,7 @@ export const Sidebar: React.FC = () => {
         )}
         <button
           onClick={toggleSidebar}
-          className="p-1 rounded-[4px] text-[#4B5565] hover:text-[#1A1F2B] hover:bg-white border border-transparent hover:border-[#CBD2DC] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#1D4ED8] ml-auto flex-shrink-0"
+          className="p-1 rounded-[4px] text-[#475569] hover:text-[#0F172A] hover:bg-white border border-transparent hover:border-[#CBD5E1] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#1D4ED8] focus-visible:outline-offset-2 ml-auto flex-shrink-0 transition-all duration-200"
           aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
@@ -107,12 +107,12 @@ export const Sidebar: React.FC = () => {
         </button>
       </div>
 
-      {/* Nav List Grouped by Bureau Responsibility */}
-      <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-4">
+      {/* Nav List Grouped by Bureau Responsibility - Stacks cleanly on mobile */}
+      <nav className={`flex-1 overflow-y-auto py-2 px-2 space-y-4 ${isSidebarCollapsed ? 'hidden md:block' : 'block'}`}>
         {navGroups.map((group) => (
           <div key={group.heading} className="space-y-1">
             {!isSidebarCollapsed && (
-              <div className="px-3 text-[10px] font-bold text-[#64748B] uppercase tracking-wider">
+              <div className="px-3 text-[10px] font-bold text-[#475569] uppercase tracking-wider">
                 {group.heading}
               </div>
             )}
@@ -124,10 +124,10 @@ export const Sidebar: React.FC = () => {
                   to={item.to}
                   end={item.to === '/'}
                   className={({ isActive }) =>
-                    `flex items-center gap-2.5 px-3 py-1.5 rounded-[4px] text-xs font-medium transition-colors ${
+                    `flex items-center gap-2.5 px-3 py-1.5 rounded-[4px] text-xs font-medium transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#1D4ED8] focus-visible:outline-offset-2 ${
                       isActive
                         ? 'bg-[#0B2A5B] text-white font-semibold shadow-xs'
-                        : 'text-[#1E293B] hover:bg-[#F1F5F9] hover:text-[#0B2A5B]'
+                        : 'text-[#0F172A] hover:bg-[#F1F5F9] hover:text-[#0B2A5B]'
                     }`
                   }
                   title={isSidebarCollapsed ? item.label : undefined}
@@ -137,7 +137,7 @@ export const Sidebar: React.FC = () => {
                     <span className="truncate flex-1">{item.label}</span>
                   )}
                   {!isSidebarCollapsed && item.badge && (
-                    <span className="text-[10px] px-1.5 py-0.2 bg-[#C2570C] text-white rounded font-bold">
+                    <span className="text-[10px] px-1.5 py-0.2 bg-[#C2410C] text-white rounded font-bold">
                       {item.badge}
                     </span>
                   )}
@@ -150,15 +150,15 @@ export const Sidebar: React.FC = () => {
 
       {/* Bottom Official Officer Credentials Box */}
       {!isSidebarCollapsed && (
-        <div className="p-3 border-t border-[#CBD2DC] bg-[#F8FAFC] text-[11px] text-[#4B5565] space-y-1">
+        <div className="p-3 border-t border-[#CBD5E1] bg-[#F8FAFC] text-[11px] text-[#475569] space-y-1">
           <div className="flex items-center justify-between font-semibold text-[#0B2A5B]">
             <span>{activeOfficer.name}</span>
             <span className="text-[9px] px-1.5 py-0.2 bg-emerald-50 text-[#166534] border border-emerald-200 rounded font-bold flex items-center gap-0.5">
               <ShieldCheck className="w-2.5 h-2.5" /> 2FA Active
             </span>
           </div>
-          <div className="text-[10.5px] text-[#64748B]">Govt. ID: <span className="font-mono text-[#0B2A5B]">AICTE-NDL-091</span></div>
-          <div className="text-[10px] text-[#C2570C] font-medium">Approval &amp; Grievance Lead</div>
+          <div className="text-[10.5px] text-[#475569]">Govt. ID: <span className="font-mono text-[#0B2A5B]">AICTE-NDL-091</span></div>
+          <div className="text-[10px] text-[#C2410C] font-semibold">Approval &amp; Grievance Lead</div>
         </div>
       )}
     </aside>
