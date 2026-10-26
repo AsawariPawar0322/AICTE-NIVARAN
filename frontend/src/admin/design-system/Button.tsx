@@ -29,15 +29,15 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     switch (variant) {
       case 'primary':
         variantStyles =
-          'bg-[#C2410C] hover:bg-[#9A3412] text-white border border-transparent shadow-none disabled:bg-[#CBD5E1] disabled:text-[#475569]';
+          'bg-[#C2570C] hover:bg-[#9A4509] text-white border border-transparent shadow-none disabled:bg-[#CBD2DC] disabled:text-[#4B5565]';
         break;
       case 'secondary':
         variantStyles =
-          'bg-white hover:bg-[#F1F5F9] text-[#0F172A] border border-[#CBD5E1] disabled:bg-[#F1F5F9] disabled:text-[#475569]';
+          'bg-white hover:bg-[#F3F5F8] text-[#1A1F2B] border border-[#CBD2DC] disabled:bg-[#F3F5F8] disabled:text-[#4B5565]';
         break;
       case 'tertiary':
         variantStyles =
-          'bg-transparent hover:bg-[#F1F5F9] text-[#C2410C] hover:text-[#9A3412] border border-transparent disabled:text-[#475569]';
+          'bg-transparent hover:bg-[#F3F5F8] text-[#C2570C] hover:text-[#9A4509] border border-transparent disabled:text-[#4B5565]';
         break;
       case 'danger':
         variantStyles =
@@ -45,7 +45,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         break;
       case 'outline-danger':
         variantStyles =
-          'bg-white hover:bg-[#FEE2E2] text-[#B91C1C] border border-[#FCA5A5] disabled:border-[#CBD5E1] disabled:text-[#475569]';
+          'bg-white hover:bg-[#FEE2E2] text-[#B91C1C] border border-[#FCA5A5] disabled:border-[#CBD2DC] disabled:text-[#4B5565]';
         break;
     }
 
@@ -60,7 +60,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         disabled={disabled || isLoading}
-        className={`inline-flex items-center justify-center font-semibold rounded-[4px] transition-all duration-200 ease-in-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#1D4ED8] focus-visible:outline-offset-2 select-none cursor-pointer disabled:cursor-not-allowed ${variantStyles} ${sizeStyles} ${className}`}
+        className={`inline-flex items-center justify-center font-semibold rounded-[4px] transition-colors focus-visible:outline focus-visible:outline-3 focus-visible:outline-[#1D4ED8] focus-visible:outline-offset-2 select-none cursor-pointer disabled:cursor-not-allowed ${variantStyles} ${sizeStyles} ${className}`}
         {...props}
       >
         {isLoading ? (

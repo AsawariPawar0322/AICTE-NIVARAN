@@ -98,9 +98,9 @@ export const TopBar: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t('search_placeholder')}
-            className="w-full h-8 pl-8 pr-3 text-xs bg-[#F8FAFC] border border-[#CBD5E1] rounded text-[#0F172A] placeholder-[#475569] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1D4ED8] focus:border-[#1D4ED8] transition-all duration-200"
+            className="w-full h-8 pl-8 pr-3 text-xs bg-[#F8FAFC] border border-[#CBD2DC] rounded text-[#1E293B] placeholder-[#64748B] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1D4ED8] focus:border-[#1D4ED8] transition-all"
           />
-          <Search className="w-3.5 h-3.5 text-[#475569] absolute left-2.5 top-2.5 pointer-events-none" aria-hidden="true" />
+          <Search className="w-3.5 h-3.5 text-[#64748B] absolute left-2.5 top-2.5" aria-hidden="true" />
         </form>
 
         {/* Notifications Dropdown Toggle */}
