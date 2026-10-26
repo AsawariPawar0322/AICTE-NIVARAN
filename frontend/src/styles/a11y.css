@@ -1,0 +1,45 @@
+/* ==========================================================================
+   AICTE NIVARAN · Accessibility Guidelines (a11y.css)
+   Target: WCAG 2.1 AA & GIGW Compliance
+   ========================================================================== */
+
+/* Universal Focus Ring */
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* High Contrast Adjustments */
+[data-contrast="high"] :focus-visible {
+  outline: 3px solid #FFFF00 !important;
+  outline-offset: 3px !important;
+}
+
+/* Minimum Accessible Touch Target for All Controls */
+button,
+a,
+input[type="checkbox"],
+input[type="radio"],
+select,
+.interactive-target {
+  min-height: 44px;
+}
+
+/* Ensure inline links and text buttons don't blow up line heights unnecessarily */
+p a,
+span a,
+.inline-link {
+  min-height: unset;
+  display: inline;
+}
+
+/* aria-live container defaults */
+[aria-live] {
+  transition: opacity var(--transition-normal);
+}
+
+/* Screen Reader Announcement helpers */
+.live-region {
+  position: absolute;
+  left: -9999px;
+}

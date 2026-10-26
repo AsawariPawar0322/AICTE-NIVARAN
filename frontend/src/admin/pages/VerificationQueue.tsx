@@ -92,33 +92,33 @@ export const VerificationQueue: React.FC = () => {
       </div>
 
       {/* Queue Table */}
-      <div className="bg-white border border-[#CBD2DC] rounded-[8px] overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+      <div className="bg-white border border-[#CBD2DC] rounded-lg shadow-xs overflow-hidden">
+        <div className="overflow-x-auto w-full">
+          <table className="w-full min-w-[980px] text-left border-collapse text-xs">
             <thead>
-              <tr className="border-b border-[#CBD2DC] bg-[#F3F5F8] text-[#4B5565] uppercase font-semibold">
-                <th className="py-2.5 px-3">Complaint ID</th>
-                <th className="py-2.5 px-3">Subject</th>
-                <th className="py-2.5 px-3">Institution</th>
-                <th className="py-2.5 px-3">Role</th>
-                <th className="py-2.5 px-3">Category</th>
-                <th className="py-2.5 px-3">Evidence</th>
-                <th className="py-2.5 px-3 text-right">Actions</th>
+              <tr className="border-b border-[#CBD2DC] bg-[#F8FAFC] text-[#475569] uppercase font-bold tracking-wider text-[11px]">
+                <th className="py-3 px-4">Complaint ID</th>
+                <th className="py-3 px-4">Subject</th>
+                <th className="py-3 px-4">Institution</th>
+                <th className="py-3 px-4">Role</th>
+                <th className="py-3 px-4">Category</th>
+                <th className="py-3 px-4">Evidence</th>
+                <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#CBD2DC]">
               {queue.map((c) => (
-                <tr key={c.id} className="hover:bg-[#F3F5F8] transition-colors">
-                  <td className="py-3 px-3 font-mono font-bold text-[#0B2A5B] whitespace-nowrap">
+                <tr key={c.id} className="hover:bg-[#F8FAFC] transition-colors">
+                  <td className="py-3.5 px-4 font-mono font-bold text-[#0B2A5B] whitespace-nowrap">
                     <Link
                       to={`/cases/${c.id}`}
-                      className="hover:text-[#C2570C] hover:underline flex items-center gap-1"
+                      className="hover:text-[#C2570C] inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#F1F5F9] border border-[#CBD2DC]"
                     >
                       {c.id}
-                      <ExternalLink className="w-3 h-3 text-[#4B5565]" />
+                      <ExternalLink className="w-3 h-3 text-[#64748B]" />
                     </Link>
                   </td>
-                  <td className="py-3 px-3 max-w-sm">
+                  <td className="py-3.5 px-4 max-w-sm">
                     <div className="font-semibold text-[#1A1F2B]" title={c.title}>
                       {c.title}
                     </div>
@@ -126,19 +126,19 @@ export const VerificationQueue: React.FC = () => {
                       {c.description}
                     </div>
                   </td>
-                  <td className="py-3 px-3">
-                    <div className="font-medium text-[#1A1F2B]">{c.institutionName}</div>
-                    <div className="text-[11px] font-mono text-[#4B5565]">{c.institutionPermanentId} · {c.city}</div>
+                  <td className="py-3.5 px-4">
+                    <div className="font-semibold text-[#1A1F2B]">{c.institutionName}</div>
+                    <div className="text-[11px] font-mono text-[#64748B]">{c.institutionPermanentId} · {c.city}</div>
                   </td>
-                  <td className="py-3 px-3 whitespace-nowrap">
+                  <td className="py-3.5 px-4 whitespace-nowrap">
                     <span className="px-2 py-0.5 bg-[#E6EEF9] text-[#1F5FBF] rounded font-semibold text-[11px]">
                       {c.complainantType}
                     </span>
                   </td>
-                  <td className="py-3 px-3 text-[#4B5565] whitespace-nowrap">
+                  <td className="py-3.5 px-4 text-[#475569] whitespace-nowrap font-medium">
                     {c.category}
                   </td>
-                  <td className="py-3 px-3 whitespace-nowrap font-mono text-[#1A1F2B]">
+                  <td className="py-3.5 px-4 whitespace-nowrap font-mono text-[#1A1F2B]">
                     {c.evidenceCount > 0 ? (
                       <span className="text-[#166534] font-semibold flex items-center gap-1">
                         <FileText className="w-3.5 h-3.5" /> {c.evidenceCount} attached
@@ -147,7 +147,7 @@ export const VerificationQueue: React.FC = () => {
                       <span className="text-[#92400E]">No attachments</span>
                     )}
                   </td>
-                  <td className="py-3 px-3 text-right whitespace-nowrap">
+                  <td className="py-3.5 px-4 text-right whitespace-nowrap">
                     <div className="flex items-center justify-end gap-1.5">
                       <Button
                         variant="primary"
