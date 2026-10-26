@@ -1,0 +1,39 @@
+/* ==========================================================================
+   AICTE NIVARAN · Print Stylesheet (print.css)
+   Clean, official black & white receipts, ATR summaries, and audit logs
+   ========================================================================== */
+
+@media print {
+  body {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+  }
+
+  header,
+  footer,
+  .skip-link,
+  .utility-strip,
+  .btn-print-hide,
+  .sidebar,
+  .toast-container,
+  nav {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .card, .panel, .docket-sheet {
+    box-shadow: none !important;
+    border: 1px solid #666666 !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 8pt;
+  }
+}
