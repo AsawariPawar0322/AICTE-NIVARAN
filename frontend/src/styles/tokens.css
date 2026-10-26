@@ -1,0 +1,164 @@
+/* ==========================================================================
+   AICTE NIVARAN · Design System Tokens (tokens.css)
+   Guidelines for Indian Government Websites (GIGW) & Modern Console Polish
+   Strict token adherence: No hard-coded hex or raw font sizes in components
+   ========================================================================== */
+
+:root {
+  /* 3.1 Primary Brand & Government Colour Palette */
+  --bg: #F8FAFC;
+  --surface: #FFFFFF;
+  --navy-900: #0A1F3D;
+  --navy-800: #13325E;
+  --navy-700: #1D467E;
+  --navy-100: #E7EFFA;
+  --navy-50: #F2F6FC;
+
+  /* Primary Call to Action: Authentic Dignified Indian Saffron / Amber */
+  --action: #C2410C;
+  --action-hover: #9A3412;
+  --action-tint: #FFEDD5;
+  --action-border: #EA580C;
+
+  /* Links & Focus States (GIGW 3px visible focus ring) */
+  --link: #004D99;
+  --link-hover: #003366;
+  --focus: #004D99;
+
+  /* Text & Border Palette */
+  --text: #1E293B;
+  --text-muted: #475569;
+  --text-light: #64748B;
+  --border: #CBD5E1;
+  --border-light: #E2E8F0;
+
+  /* Semantic Status Indicators with Accessible Contrast */
+  --ok: #15803D;
+  --ok-surface: #F0FDF4;
+  --ok-border: #86EFAC;
+
+  --warn: #92400E;
+  --warn-surface: #FEF3C7;
+  --warn-border: #F59E0B;
+
+  --danger: #B91C1C;
+  --danger-surface: #FEF2F2;
+  --danger-border: #FCA5A5;
+
+  --info: #0369A1;
+  --info-surface: #F0F9FF;
+  --info-border: #BAE6FD;
+
+  /* Indian National Tricolour (Hairline & Footer Rules only) */
+  --india-saffron: #FF9933;
+  --india-white: #FFFFFF;
+  --india-green: #138808;
+
+  /* 3.2 Refined Typography Scale & Proportions */
+  --font-family: 'Inter', 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family-hindi: 'Noto Sans Devanagari', 'Noto Sans', sans-serif;
+  --font-family-mono: 'Noto Sans Mono', SFMono-Regular, Consolas, monospace;
+
+  --fs-2xs: 0.6875rem; /* 11px - Micro badges & metadata */
+  --fs-xs: 0.75rem;    /* 12px - Captions, tags, hints */
+  --fs-sm: 0.8125rem;  /* 13px - Dense table rows, secondary labels */
+  --fs-base: 0.875rem; /* 14px - Primary UI text, standard buttons, inputs */
+  --fs-md: 0.9375rem;  /* 15px - Body copy & comfortable card reading */
+  --fs-lg: 1.0625rem;  /* 17px - Card headers, modal titles */
+  --fs-xl: 1.25rem;    /* 20px - Section headers */
+  --fs-2xl: 1.45rem;   /* 23px - Subsection banners */
+  --fs-3xl: 1.75rem;   /* 28px - Section hero titles */
+  --fs-4xl: 2.15rem;   /* 34px - Main landing hero title */
+
+  --lh-body: 1.5;
+  --lh-heading: 1.25;
+  --lh-hindi: 1.6;
+
+  /* 3.3 Spacing Scale */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+  --sp-8: 64px;
+
+  /* Radius (Standardized to authentic institutional 4px, 6px, 8px) */
+  --rad-sm: 4px;   /* inputs, chips, badges */
+  --rad-md: 6px;   /* buttons, cards, containers */
+  --rad-lg: 8px;   /* modal dialogs, key containers */
+  --rad-full: 9999px;
+
+  /* Elevation (Clean, Flat Government Surfaces with Soft 1px Depth) */
+  --shadow-0: none;
+  --shadow-1: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-2: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-3: 0 4px 6px -1px rgba(15, 23, 42, 0.1), 0 2px 4px -2px rgba(15, 23, 42, 0.06);
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --transition-normal: 250ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --transition-slow: 400ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* High Contrast Mode for GIGW Accessibility Compliance */
+[data-contrast="high"] {
+  --bg: #000000;
+  --surface: #121212;
+  --navy-900: #000000;
+  --navy-800: #111111;
+  --navy-700: #222222;
+  --navy-100: #222222;
+  --navy-50: #111111;
+
+  --action: #FFCC00;
+  --action-hover: #FFE600;
+  --action-tint: #2A2400;
+  --action-border: #FFCC00;
+
+  --link: #66B2FF;
+  --link-hover: #99CCFF;
+  --focus: #FFFF00;
+
+  --text: #FFFFFF;
+  --text-muted: #D1D5DB;
+  --text-light: #9CA3AF;
+  --border: #FFFFFF;
+  --border-light: #CCCCCC;
+
+  --ok: #00FF66;
+  --ok-surface: #00220A;
+  --ok-border: #00FF66;
+
+  --warn: #FFFF00;
+  --warn-surface: #262600;
+  --warn-border: #FFFF00;
+
+  --danger: #FF6666;
+  --danger-surface: #330000;
+  --danger-border: #FF6666;
+
+  --info: #66B2FF;
+  --info-surface: #001A33;
+  --info-border: #66B2FF;
+
+  --shadow-1: 0 0 0 1px #FFFFFF;
+  --shadow-2: 0 0 0 2px #FFFFFF;
+}
+
+/* Text Size Scaling Preferences (Proportional GIGW steps) */
+html[data-text-size="90"] { font-size: 92%; }
+html[data-text-size="100"] { font-size: 100%; }
+html[data-text-size="115"] { font-size: 106%; }
+html[data-text-size="130"] { font-size: 112%; }
+
+/* Reduced Motion Override */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

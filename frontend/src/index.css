@@ -1,6 +1,17 @@
-@import "./tokens.css";
+@import "./styles/tokens.css";
+@import "./styles/base.css";
+@import "./styles/a11y.css";
+@import "./styles/print.css";
 @tailwind components;
 @tailwind utilities;
+
+/* Brand subtitle hiding under 1600px per Defect D4 */
+@media (max-width: 1599px) {
+  .brand-subtitle {
+    display: none !important;
+  }
+}
+
 
 /* Global CSS Reset */
 *, *::before, *::after {
