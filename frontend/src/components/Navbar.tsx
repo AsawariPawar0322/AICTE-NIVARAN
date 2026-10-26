@@ -13,7 +13,8 @@ export type ActiveTab =
   | 'discord'
   | 'login'
   | 'citizen-login'
-  | 'admin-login';
+  | 'admin-login'
+  | 'admin-inbox';
 
 interface NavbarProps {
   lang: Language;
@@ -22,6 +23,10 @@ interface NavbarProps {
   pendingOtpCount: number;
   onOpenFloatingChat?: () => void;
   isLoggedIn?: boolean;
+  activeRole?: 'complainant' | 'official';
+  isOfficialSignedIn?: boolean;
+  officerUnreadCount?: number;
+  complainantUnreadCount?: number;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -31,8 +36,13 @@ export const Navbar: React.FC<NavbarProps> = ({
   pendingOtpCount,
   onOpenFloatingChat,
   isLoggedIn = false,
+  activeRole = 'complainant',
+  isOfficialSignedIn = false,
+  officerUnreadCount = 0,
+  complainantUnreadCount = 0,
 }) => {
   const t = translations[lang];
+  const isOfficial = activeRole === 'official';
 
   const isCitizenArea =
     activeTab === 'citizen' ||
@@ -42,7 +52,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     activeTab === 'chat' ||
     activeTab === 'citizen-login';
 
-  const isAdminArea = activeTab === 'admin';
+  const isAdminArea = activeTab === 'admin' || activeTab === 'admin-inbox';
   const homeTabActive = activeTab === 'home';
 
   return (
@@ -114,19 +124,34 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 <Icon e="💭" size={15} />
                 <span>Officer Chat</span>
-                <span className="nb-pulse-dot" aria-hidden="true" />
+                {!isOfficial && complainantUnreadCount > 0 ? (
+                  <span className="nb-count-badge" aria-label={`${complainantUnreadCount} unread`}>
+                    {complainantUnreadCount}
+                  </span>
+                ) : (
+                  <span className="nb-pulse-dot" aria-hidden="true" />
+                )}
               </button>
             )}
 
             <button
               type="button"
               className={`nb-admin-btn ${isAdminArea ? 'nb-admin-active' : ''}`}
-              onClick={() => setActiveTab('admin-login')}
+              onClick={() => {
+                // Signed-in officials skip the login screen; unread messages open the inbox
+                if (!isOfficialSignedIn) setActiveTab('admin-login');
+                else setActiveTab(officerUnreadCount > 0 ? 'admin-inbox' : 'admin');
+              }}
               aria-label="Administration portal — for AICTE officials"
               aria-current={isAdminArea ? 'page' : undefined}
             >
               <Icon e="🛡️" size={15} />
               <span>Administration</span>
+              {isOfficial && officerUnreadCount > 0 && (
+                <span className="nb-count-badge" aria-label={`${officerUnreadCount} unread messages`}>
+                  {officerUnreadCount}
+                </span>
+              )}
             </button>
           </div>
         </div>
@@ -244,6 +269,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           font-size: 0.65rem; font-weight: 800;
           padding: 1px 6px; border-radius: var(--radius-pill);
           animation: nb-otp-pulse 2s infinite;
+        }
+        .nb-count-badge {
+          background: var(--color-action-600); color: #fff;
+          font-size: 0.65rem; font-weight: 800;
+          min-width: 18px; text-align: center;
+          padding: 1px 6px; border-radius: var(--radius-pill);
         }
         @keyframes nb-otp-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
         .nb-discord-item { background: rgba(88,101,242,0.12); border: 1px solid rgba(88,101,242,0.25); }

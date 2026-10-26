@@ -40,6 +40,9 @@ export interface TimelineEvent {
   stage: StageKey;
 }
 
+// Event passed to App handlers; id, timestamp and (by default) stage are filled in by App
+export type NewTimelineEvent = Omit<TimelineEvent, 'id' | 'timestamp' | 'stage'> & { stage?: StageKey };
+
 export interface Complaint {
   id: string; // e.g. AICTE-2026-GRV-84920
   title: string;
@@ -94,16 +97,46 @@ export interface Institution {
   complianceRating: string;
 }
 
+// Complainant ↔ Officer Conversation Types (Support Inbox)
+export type MessageKind =
+  | 'text'                // normal message from either side
+  | 'clarification'       // official remark issued by the officer
+  | 'document_request'    // officer asks the complainant for files
+  | 'document_submission' // complainant answers a request with files
+  | 'system';             // automated notice
+
+export interface DocumentRequest {
+  id: string;
+  items: string[];
+  note?: string;
+  dueDate?: string;
+  status: 'pending' | 'fulfilled';
+  fulfilledAt?: string;
+  fulfilledFileIds?: string[];
+}
+
 export interface UserAdminMessage {
   id: string;
+  complaintId: string;
+  kind: MessageKind;
   senderRole: 'complainant' | 'officer' | 'system';
   senderName: string;
   senderAvatar?: string;
   content: string;
   timestamp: string;
   attachmentName?: string;
+  attachments?: EvidenceFile[];
+  documentRequest?: DocumentRequest;
+  replyToRequestId?: string;
   isOfficialNote?: boolean;
+  readByOfficer: boolean;
+  readByComplainant: boolean;
 }
+
+// Conversations keyed by complaint id
+export type ConversationMap = Record<string, UserAdminMessage[]>;
+
+export type ConversationReader = 'officer' | 'complainant';
 
 // Discord Replica Hub Types
 export interface DiscordServer {

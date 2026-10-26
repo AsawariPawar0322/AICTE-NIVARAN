@@ -1,0 +1,131 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-action: #C2570C;
+  --color-action-hover: #9A4509;
+  --color-brand-orange: #F2895E;
+  --color-brand-blue: #1F5FBF;
+  --color-brand-blue-100: #E6EEF9;
+  --color-navy: #0B2A5B;
+  --color-text: #1A1F2B;
+  --color-text-muted: #4B5565;
+  --color-border: #CBD2DC;
+  --color-bg: #F3F5F8;
+  --color-surface: #FFFFFF;
+  --color-focus: #1D4ED8;
+
+  /* Semantic status colors (WCAG AA compliant pairs) */
+  --color-success-text: #166534;
+  --color-success-bg: #DCFCE7;
+  --color-success-border: #86EFAC;
+
+  --color-warning-text: #92400E;
+  --color-warning-bg: #FEF3C7;
+  --color-warning-border: #FCD34D;
+
+  --color-danger-text: #B91C1C;
+  --color-danger-bg: #FEE2E2;
+  --color-danger-border: #FCA5A5;
+
+  --color-info-text: #1D4ED8;
+  --color-info-bg: #DBEAFE;
+  --color-info-border: #93C5FD;
+
+  /* Typography */
+  --font-sans: "Noto Sans", "Noto Sans Devanagari", "Segoe UI", Arial, sans-serif;
+  --font-mono: "Noto Sans Mono", ui-monospace, monospace;
+
+  /* 4px Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  /* Radii */
+  --radius-sm: 4px; /* inputs, chips, badges */
+  --radius-md: 8px; /* cards, containers, dialogs */
+
+  /* Text scaling factor */
+  --text-scale: 1;
+}
+
+html {
+  font-size: calc(16px * var(--text-scale));
+  font-family: var(--font-sans);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+/* Accessible focus ring - 3px solid, 2px offset */
+:focus-visible {
+  outline: 3px solid var(--color-focus) !important;
+  outline-offset: 2px !important;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Skip link for screen readers and keyboard users */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 16px;
+  background: var(--color-action);
+  color: #FFFFFF;
+  padding: 8px 16px;
+  z-index: 9999;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  transition: top 0.15s ease;
+}
+
+.skip-link:focus {
+  top: 16px;
+}
+
+/* Clean, flat, quiet visual styling - no glow, no glass, no decorative shadows */
+.card-flat {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.input-flat {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  padding: 8px 12px;
+}
+
+.input-flat:focus {
+  border-color: var(--color-focus);
+}
+
+/* Custom scrollbars for high density tables */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F3F5F8;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD2DC;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9A4509;
+}

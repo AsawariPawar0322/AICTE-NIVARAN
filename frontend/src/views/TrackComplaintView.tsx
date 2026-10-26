@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Language } from '../locales/translations';
 import { ActiveTab } from '../components/Navbar';
-import { Complaint, StageKey } from '../types';
+import { Complaint, StageKey, NewTimelineEvent } from '../types';
 import { Icon } from '../components/Icon';
 import { Building, DiscordLogo } from '@phosphor-icons/react';
 
@@ -10,7 +10,7 @@ interface TrackComplaintViewProps {
   setActiveTab: (tab: ActiveTab) => void;
   complaints: Complaint[];
   selectedComplaint?: Complaint | null;
-  onUpdateComplaintStage: (caseId: string, newStage: StageKey, feedback?: string) => void;
+  onUpdateComplaintStage: (caseId: string, newStage: StageKey, feedback?: string, event?: NewTimelineEvent) => void;
   onOpenChatWithComplaint: (complaint: Complaint) => void;
 }
 
@@ -32,9 +32,11 @@ export const TrackComplaintView: React.FC<TrackComplaintViewProps> = ({
   onOpenChatWithComplaint
 }) => {
   const [searchId, setSearchId] = useState(selectedComplaint?.id ?? complaints[0]?.id ?? '');
-  const [activeCase, setActiveCase] = useState<Complaint>(
-    selectedComplaint ?? complaints[0]
+  // Store only the id so the view always shows the latest complaint from App state
+  const [activeCaseId, setActiveCaseId] = useState<string | undefined>(
+    selectedComplaint?.id ?? complaints[0]?.id
   );
+  const activeCase: Complaint = complaints.find(c => c.id === activeCaseId) ?? complaints[0];
   const [otpInput, setOtpInput] = useState('');
   const [otpError, setOtpError] = useState('');
   const [showEscalationModal, setShowEscalationModal] = useState(false);
@@ -45,7 +47,7 @@ export const TrackComplaintView: React.FC<TrackComplaintViewProps> = ({
       c.id.trim().toLowerCase() === searchId.trim().toLowerCase()
     );
     if (found) {
-      setActiveCase(found);
+      setActiveCaseId(found.id);
       setOtpError('');
     } else {
       alert(`Case "${searchId}" not found.`);
@@ -56,18 +58,12 @@ export const TrackComplaintView: React.FC<TrackComplaintViewProps> = ({
     e.preventDefault();
     const expected = activeCase?.otpVerification?.generatedOtp ?? '849210';
     if (otpInput.trim() === expected) {
-      onUpdateComplaintStage(activeCase.id, 'RESOLVED');
-      setActiveCase(prev => ({
-        ...prev,
-        currentStage: 'RESOLVED',
-        stageNumber: 6,
-        otpVerification: {
-          generatedOtp: expected,
-          isVerified: true,
-          verifiedAt: 'Just now',
-          citizenFeedback: 'Verified and accepted via Citizen OTP Gateway.'
-        }
-      }));
+      onUpdateComplaintStage(activeCase.id, 'RESOLVED', 'Verified and accepted via Citizen OTP Gateway.', {
+        title: 'Case Formally Disposed & Citizen OTP Verified',
+        description: 'Complainant verified satisfaction via 6-digit OTP. AICTE closure certificate generated.',
+        actor: activeCase.complainantName,
+        role: 'Citizen Verification'
+      });
       setOtpError('');
     } else {
       setOtpError(`Invalid OTP. Expected: ${expected}`);
@@ -79,23 +75,12 @@ export const TrackComplaintView: React.FC<TrackComplaintViewProps> = ({
       alert('Please provide a reason.');
       return;
     }
-    onUpdateComplaintStage(activeCase.id, 'ESCALATED', escalationReason);
-    setActiveCase(prev => ({
-      ...prev,
-      currentStage: 'ESCALATED',
-      timeline: [
-        ...prev.timeline,
-        {
-          id: `tl-esc-${Date.now()}`,
-          title: 'Escalated to State Technical Ombudsman',
-          description: `Citizen rejected resolution: "${escalationReason}". Referred for judicial review.`,
-          actor: 'Citizen Rejection Gateway',
-          role: 'Complainant Action',
-          timestamp: 'Just now',
-          stage: 'ESCALATED'
-        }
-      ]
-    }));
+    onUpdateComplaintStage(activeCase.id, 'ESCALATED', escalationReason, {
+      title: 'Escalated to State Technical Ombudsman',
+      description: `Citizen rejected resolution: "${escalationReason}". Referred for judicial review.`,
+      actor: 'Citizen Rejection Gateway',
+      role: 'Complainant Action'
+    });
     setShowEscalationModal(false);
   };
 

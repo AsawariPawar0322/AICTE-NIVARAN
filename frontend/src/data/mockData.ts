@@ -2,7 +2,7 @@
 // AICTE Grievance Coordination System · Master Mock Data
 // ==========================================================================
 
-import { Complaint, Institution, UserAdminMessage, DiscordServer, DiscordChannel, DiscordMessage, DiscordMember } from '../types';
+import { Complaint, Institution, ConversationMap, DiscordServer, DiscordChannel, DiscordMessage, DiscordMember } from '../types';
 
 export const mockInstitutions: Institution[] = [
   {
@@ -287,45 +287,156 @@ export const initialComplaints: Complaint[] = [
   }
 ];
 
-export const initialChatMessages: UserAdminMessage[] = [
-  {
-    id: 'msg-1',
-    senderRole: 'system',
-    senderName: 'AICTE Grievance System',
-    content: 'Welcome Aarav Sharma. You are connected to the official enquiry channel for case AICTE-2026-GRV-84920. All messages in this thread are securely logged into the official case audit trail.',
-    timestamp: '16 Aug 2026, 10:19 AM'
-  },
-  {
-    id: 'msg-2',
-    senderRole: 'officer',
-    senderName: 'Dr. Ramesh Chandra Verma (PGRC)',
-    content: 'Dear Complainant Aarav Sharma, I have reviewed your submission and the attached Fee Challan. We have dispatched an urgent statutory requisition to the Registrar of DTU regarding the ₹44,000 refund pursuant to AICTE guidelines. Could you please confirm if you received any written reply from the Dean Academics?',
-    timestamp: '18 Aug 2026, 11:05 AM',
-    isOfficialNote: true
-  },
-  {
-    id: 'msg-3',
-    senderRole: 'complainant',
-    senderName: 'Aarav Sharma (You)',
-    content: 'Sir, I visited the accounts section twice on 22nd August. They verbally stated that institutional policy requires 3 months for caution money processing. However, as per AICTE handbook, seat withdrawal before cutoff mandates refund within 7 working days.',
-    timestamp: '18 Aug 2026, 11:20 AM'
-  },
-  {
-    id: 'msg-4',
-    senderRole: 'officer',
-    senderName: 'Dr. Ramesh Chandra Verma (PGRC)',
-    content: 'Noted. Institutional internal policy cannot supersede Central AICTE Regulations. We have summoned the College Accounts Nodal Officer for an online hearing tomorrow at 3:00 PM. We will push for direct NEFT clearance.',
-    timestamp: '18 Aug 2026, 02:40 PM',
-    isOfficialNote: true
-  },
-  {
-    id: 'msg-5',
-    senderRole: 'system',
-    senderName: 'AICTE Settlement Gateway',
-    content: '🔔 UPDATE: DTU has uploaded the Action Taken Report (ATR) along with NEFT UTR number SBIN202609148201 for ₹44,000. Please proceed to the "Track Status & Stages" tab to verify the OTP and close the case.',
-    timestamp: 'Today at 11:32 AM'
-  }
-];
+// Conversations are keyed by complaint id so every message stays linked to its case
+export const initialConversations: ConversationMap = {
+  'AICTE-2026-GRV-84920': [
+    {
+      id: 'msg-1',
+      complaintId: 'AICTE-2026-GRV-84920',
+      kind: 'system',
+      senderRole: 'system',
+      senderName: 'AICTE Grievance System',
+      content: 'Welcome Aarav Sharma. You are connected to the official enquiry channel for case AICTE-2026-GRV-84920. All messages in this thread are securely logged into the official case audit trail.',
+      timestamp: '16 Aug 2026, 10:19 AM',
+      readByOfficer: true,
+      readByComplainant: true
+    },
+    {
+      id: 'msg-2',
+      complaintId: 'AICTE-2026-GRV-84920',
+      kind: 'clarification',
+      senderRole: 'officer',
+      senderName: 'Dr. Ramesh Chandra Verma (PGRC)',
+      content: 'Dear Complainant Aarav Sharma, I have reviewed your submission and the attached Fee Challan. We have dispatched an urgent statutory requisition to the Registrar of DTU regarding the ₹44,000 refund pursuant to AICTE guidelines. Could you please confirm if you received any written reply from the Dean Academics?',
+      timestamp: '18 Aug 2026, 11:05 AM',
+      isOfficialNote: true,
+      readByOfficer: true,
+      readByComplainant: true
+    },
+    {
+      id: 'msg-3',
+      complaintId: 'AICTE-2026-GRV-84920',
+      kind: 'text',
+      senderRole: 'complainant',
+      senderName: 'Aarav Sharma',
+      content: 'Sir, I visited the accounts section twice on 22nd August. They verbally stated that institutional policy requires 3 months for caution money processing. However, as per AICTE handbook, seat withdrawal before cutoff mandates refund within 7 working days.',
+      timestamp: '18 Aug 2026, 11:20 AM',
+      readByOfficer: true,
+      readByComplainant: true
+    },
+    {
+      id: 'msg-4',
+      complaintId: 'AICTE-2026-GRV-84920',
+      kind: 'clarification',
+      senderRole: 'officer',
+      senderName: 'Dr. Ramesh Chandra Verma (PGRC)',
+      content: 'Noted. Institutional internal policy cannot supersede Central AICTE Regulations. We have summoned the College Accounts Nodal Officer for an online hearing tomorrow at 3:00 PM. We will push for direct NEFT clearance.',
+      timestamp: '18 Aug 2026, 02:40 PM',
+      isOfficialNote: true,
+      readByOfficer: true,
+      readByComplainant: true
+    },
+    {
+      id: 'msg-5',
+      complaintId: 'AICTE-2026-GRV-84920',
+      kind: 'system',
+      senderRole: 'system',
+      senderName: 'AICTE Settlement Gateway',
+      content: '🔔 UPDATE: DTU has uploaded the Action Taken Report (ATR) along with NEFT UTR number SBIN202609148201 for ₹44,000. Please proceed to the "Track Status & Stages" tab to verify the OTP and close the case.',
+      timestamp: 'Today at 11:32 AM',
+      readByOfficer: true,
+      readByComplainant: true
+    }
+  ],
+  'AICTE-2026-GRV-79114': [
+    {
+      id: 'msg-21',
+      complaintId: 'AICTE-2026-GRV-79114',
+      kind: 'system',
+      senderRole: 'system',
+      senderName: 'AICTE Grievance System',
+      content: 'Conversation opened for case AICTE-2026-GRV-79114. All messages in this thread are logged into the official case audit trail.',
+      timestamp: '02 Sep 2026, 02:11 PM',
+      readByOfficer: true,
+      readByComplainant: true
+    },
+    {
+      id: 'msg-22',
+      complaintId: 'AICTE-2026-GRV-79114',
+      kind: 'document_request',
+      senderRole: 'officer',
+      senderName: 'Mrs. S. Meenakshi',
+      content: 'To escalate the PFMS verification freeze with the institute, please upload the documents listed below.',
+      timestamp: '04 Sep 2026, 11:50 AM',
+      documentRequest: {
+        id: 'docreq-79114-1',
+        items: ['PFMS Aadhaar-seeding confirmation', 'Bank passbook (first page)'],
+        note: 'A clear photo or PDF of each document is sufficient.',
+        dueDate: '28 Oct 2026',
+        status: 'pending'
+      },
+      readByOfficer: true,
+      readByComplainant: true
+    },
+    {
+      id: 'msg-23',
+      complaintId: 'AICTE-2026-GRV-79114',
+      kind: 'text',
+      senderRole: 'complainant',
+      senderName: 'Pooja Kulkarni',
+      content: 'Ma\'am, the college verification desk says the PFMS batch is still frozen from their side. My scholarship of ₹50,000 has not been released yet.',
+      timestamp: 'Today at 10:32 AM',
+      readByOfficer: false,
+      readByComplainant: true
+    },
+    {
+      id: 'msg-24',
+      complaintId: 'AICTE-2026-GRV-79114',
+      kind: 'text',
+      senderRole: 'complainant',
+      senderName: 'Pooja Kulkarni',
+      content: 'Is the bank passbook front page enough, or do you also need a statement? I will upload today.',
+      timestamp: 'Today at 10:40 AM',
+      readByOfficer: false,
+      readByComplainant: true
+    }
+  ],
+  'AICTE-2026-GRV-65021': [
+    {
+      id: 'msg-31',
+      complaintId: 'AICTE-2026-GRV-65021',
+      kind: 'text',
+      senderRole: 'complainant',
+      senderName: 'Rohan Deshmukh',
+      content: 'Sir, the new UTM sensors were used in today\'s practical session and are working properly.',
+      timestamp: '14 Oct 2026, 03:50 PM',
+      readByOfficer: true,
+      readByComplainant: true
+    },
+    {
+      id: 'msg-32',
+      complaintId: 'AICTE-2026-GRV-65021',
+      kind: 'text',
+      senderRole: 'officer',
+      senderName: 'Prof. Anil Sahasrabudhe',
+      content: 'Thank you for confirming. Please verify the closure OTP in the tracker so the case can be formally disposed.',
+      timestamp: '14 Oct 2026, 04:02 PM',
+      readByOfficer: true,
+      readByComplainant: true
+    },
+    {
+      id: 'msg-33',
+      complaintId: 'AICTE-2026-GRV-65021',
+      kind: 'system',
+      senderRole: 'system',
+      senderName: 'AICTE Settlement Gateway',
+      content: 'Case formally disposed after citizen OTP verification. This conversation is now read-only for the record.',
+      timestamp: '14 Oct 2026, 04:15 PM',
+      readByOfficer: true,
+      readByComplainant: true
+    }
+  ]
+};
 
 // Discord Coordination Hub Mock Data
 export const mockDiscordServers: DiscordServer[] = [

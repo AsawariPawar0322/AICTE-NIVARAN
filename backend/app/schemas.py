@@ -3,7 +3,7 @@
 # ==========================================================================
 
 from pydantic import BaseModel, EmailStr
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Literal
 
 class SendOtpRequest(BaseModel):
     identifier: str  # Mobile number or Email
@@ -55,9 +55,163 @@ class EscalateRequest(BaseModel):
     case_id: str
     dissatisfied_reason: str
 
+class DocumentRequestIn(BaseModel):
+    items: List[str]
+    note: Optional[str] = None
+    due_date: Optional[str] = None
+
 class ChatMessageRequest(BaseModel):
-    case_id: str
-    sender_role: str
+    sender_role: Literal["complainant", "officer"]
     sender_name: str
     content: str
-    attachment_name: Optional[str] = None
+    kind: Literal["text", "clarification", "document_request"] = "text"
+    document_request: Optional[DocumentRequestIn] = None
+    attachments: List[EvidenceUploadItem] = []
+
+class MarkReadRequest(BaseModel):
+    reader_role: Literal["officer", "complainant"]
+
+class FulfillDocumentRequest(BaseModel):
+    sender_name: str
+    attachments: List[EvidenceUploadItem]
+
+# ==========================================================================
+# Overlap Detection & Case Linker Schemas
+# ==========================================================================
+
+class MatchCriteriaBreakdown(BaseModel):
+    permanent_id_match: bool
+    institution_score: float
+    category_match: bool
+    category_score: float
+    extracted_amount_match: Optional[bool] = None
+    extracted_amount_str: Optional[str] = None
+    temporal_proximity_days: int
+    semantic_similarity_score: float
+    shared_keyphrases: List[str] = []
+
+class OverlapRecommendation(BaseModel):
+    pair_id: str
+    target_case_id: str
+    candidate_case_id: str
+    candidate_title: str
+    candidate_category: str
+    candidate_institution_name: str
+    candidate_permanent_id: str
+    candidate_complainant_masked: str
+    candidate_date: str
+    confidence_score: int
+    recommendation_tier: Literal["PRIORITIZED", "MANUAL_REVIEW", "NO_MATCH"]
+    match_reasons: List[str]
+    breakdown: MatchCriteriaBreakdown
+    is_linked: bool = False
+    is_dismissed: bool = False
+
+class LinkActionRequest(BaseModel):
+    source_case_id: str
+    target_case_id: str
+    action: Literal["CONFIRM", "REJECT"]
+    officer_name: str
+    rejection_reason: Optional[str] = None
+
+
+class AtrEvaluationRequest(BaseModel):
+    complaint_id: str
+    category: str
+    atr_text: str
+    voucher_name: Optional[str] = None
+    voucher_sha256: Optional[str] = None
+    institution_id: Optional[str] = None
+
+
+class AtrQualityResult(BaseModel):
+    proof_id: Optional[str] = None
+    complaint_id: str
+    quality_score: int
+    verdict: Literal["PASSED_QUALITY_GATE", "SUSPICIOUS_LOW_QUALITY", "FLAGGED_EVASIVE_CLOSURE"]
+    status_label: str
+    can_dispatch_otp: bool
+    extracted_utr: Optional[str] = None
+    risk_flags: List[str] = []
+    reasons: List[str] = []
+    similarity_to_past_atr: float = 0.0
+
+
+class AtrScrutinyDecisionRequest(BaseModel):
+    proof_id: str
+    complaint_id: str
+    action: Literal["APPROVE_AND_DISPATCH_OTP", "REJECT_FAKE_CLOSURE", "DISPUTED_BY_CITIZEN"]
+    officer_name: str
+    remarks: str
+
+
+# ==========================================================================
+# Tamper-Evident Timeline Schemas
+# ==========================================================================
+
+class TimelineVerificationResponse(BaseModel):
+    case_id: str
+    is_valid: bool
+    total_events_verified: int = 0
+    genesis_root: Optional[str] = None
+    head_hash: Optional[str] = None
+    verification_status: Literal["CRYPTOGRAPHICALLY_VERIFIED", "TAMPER_DETECTED", "BROKEN_LINKAGE", "EMPTY_TIMELINE"]
+    message: str
+    broken_at_index: Optional[int] = None
+    broken_event_id: Optional[str] = None
+    broken_event_title: Optional[str] = None
+    expected_hash: Optional[str] = None
+    found_hash: Optional[str] = None
+
+
+class SimulateTamperRequest(BaseModel):
+    event_index: int = 2
+    tampered_text: Optional[str] = "MALICIOUS AUDIT MODIFICATION: Disposed without physical inspection or refund clearance."
+
+
+# ==========================================================================
+# Institution Grievance Scorecard & Inspection Priority Schemas
+# ==========================================================================
+
+class ScoreBreakdown(BaseModel):
+    overdue_points: float = 0.0
+    reopened_points: float = 0.0
+    upheld_points: float = 0.0
+    overlap_points: float = 0.0
+    evasive_atr_points: float = 0.0
+
+
+class InstitutionScorecardItem(BaseModel):
+    permanent_id: str
+    institution_name: str
+    city: str
+    state: str
+    region: str
+    total_cases: int
+    active_cases: int
+    resolved_cases: int
+    upheld_complaints: int
+    upheld_complaint_ids: List[str] = []
+    median_resolution_days: float
+    overdue_rate: float
+    reopened_cases: int
+    reopened_case_ids: List[str] = []
+    overlap_count: int
+    flagged_atr_count: int
+    inspection_priority_score: int
+    priority_tier: Literal["CRITICAL", "HIGH", "MEDIUM", "ROUTINE"]
+    recommended_action: str
+    recommended_action_label: str
+    score_breakdown: ScoreBreakdown
+    explainable_reasons: List[str]
+    inspection_rank: Optional[int] = None
+
+
+class IssueInspectionOrderRequest(BaseModel):
+    permanent_id: str
+    officer_name: str
+    inspection_type: Literal["SURPRISE_PHYSICAL", "STATUTORY_SHOW_CAUSE", "DESK_AUDIT", "NODAL_HEARING"]
+    target_date: str
+    terms_of_reference: str
+    inspecting_team: List[str] = []
+

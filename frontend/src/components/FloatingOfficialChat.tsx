@@ -1,79 +1,101 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Complaint, UserAdminMessage } from '../types';
+import { Language } from '../locales/translations';
+import { Complaint, ConversationMap, ConversationReader, EvidenceFile, UserAdminMessage } from '../types';
+import { MessageThread } from './chat/MessageThread';
+import { toEvidenceFiles } from '../lib/evidence';
 import { Icon } from './Icon';
-import { Building, Scales } from '@phosphor-icons/react';
+import { Building } from '@phosphor-icons/react';
 
 interface FloatingOfficialChatProps {
+  lang: Language;
   complaints: Complaint[];
   selectedComplaint: Complaint | null;
   onSelectComplaint: (complaint: Complaint) => void;
-  messages: UserAdminMessage[];
-  onSendMessage: (msg: UserAdminMessage) => void;
+  conversations: ConversationMap;
+  unreadCount: number;
+  onSendMessage: (complaintId: string, msg: UserAdminMessage) => void;
+  onFulfillDocumentRequest: (complaintId: string, requestId: string, files: EvidenceFile[], senderName: string) => void;
+  onMarkThreadRead: (complaintId: string, reader: ConversationReader) => void;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
 }
 
 export const FloatingOfficialChat: React.FC<FloatingOfficialChatProps> = ({
+  lang,
   complaints,
   selectedComplaint,
   onSelectComplaint,
-  messages,
+  conversations,
+  unreadCount,
   onSendMessage,
+  onFulfillDocumentRequest,
+  onMarkThreadRead,
   isOpen,
   setIsOpen
 }) => {
   const [isMinimized, setIsMinimized] = useState(false);
   const [inputText, setInputText] = useState('');
-  const [isOfficerTyping, setIsOfficerTyping] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(1);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [isAttaching, setIsAttaching] = useState(false);
+  const [uploadingRequestId, setUploadingRequestId] = useState<string | null>(null);
+  const attachInputRef = useRef<HTMLInputElement>(null);
 
   const activeCase = selectedComplaint || complaints[0];
+  const messages = activeCase ? conversations[activeCase.id] || [] : [];
 
+  // Reading the open thread clears the complainant's unread messages for that case
+  const hasUnread = messages.some(m => !m.readByComplainant);
   useEffect(() => {
-    if (isOpen && !isMinimized) {
-      setUnreadCount(0);
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (isOpen && !isMinimized && activeCase && hasUnread) {
+      onMarkThreadRead(activeCase.id, 'complainant');
     }
-  }, [isOpen, isMinimized, messages]);
+  }, [isOpen, isMinimized, activeCase, hasUnread, onMarkThreadRead]);
+
+  const sendMessage = (content: string, attachments?: EvidenceFile[]) => {
+    if (!activeCase) return;
+    onSendMessage(activeCase.id, {
+      id: `msg-float-${Date.now()}`,
+      complaintId: activeCase.id,
+      kind: 'text',
+      senderRole: 'complainant',
+      senderName: activeCase.complainantName,
+      content,
+      timestamp: 'Just now',
+      attachments,
+      readByOfficer: false,
+      readByComplainant: true
+    });
+  };
 
   const handleSend = (textToSend?: string) => {
-    const text = textToSend || inputText;
-    if (!text.trim()) return;
-
-    const userMsg: UserAdminMessage = {
-      id: `msg-float-${Date.now()}`,
-      senderRole: 'complainant',
-      senderName: `${activeCase?.complainantName || 'Citizen'} (You)`,
-      content: text,
-      timestamp: 'Just now'
-    };
-
-    onSendMessage(userMsg);
+    const text = (textToSend || inputText).trim();
+    if (!text) return;
+    sendMessage(text);
     if (!textToSend) setInputText('');
+  };
 
-    // Simulate official nodal officer response
-    setIsOfficerTyping(true);
-    setTimeout(() => {
-      setIsOfficerTyping(false);
-      const officerReplies = [
-        `Regarding case ${activeCase?.id}: We have logged your submission into the official hearing record. The college registrar has been notified under AICTE Regulation 2026.`,
-        `Your query has been acknowledged. The Public Grievance Redressal Cell (PGRC) is monitoring this case with high priority under the 72-hour SLA.`,
-        `Please note: Case resolution cannot be completed without your final 6-Digit OTP verification. Keep your registered mobile handy.`,
-        `The institution has been requested to provide an Action Taken Report (ATR) along with refund transfer proof within 48 hours.`
-      ];
-      const randomReply = officerReplies[Math.floor(Math.random() * officerReplies.length)];
+  const handleAttach = async (files: FileList) => {
+    setIsAttaching(true);
+    try {
+      const evidence = await toEvidenceFiles(files);
+      sendMessage(`Shared ${evidence.length} supporting document(s).`, evidence);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Could not read the selected files.');
+    } finally {
+      setIsAttaching(false);
+    }
+  };
 
-      const officerMsg: UserAdminMessage = {
-        id: `msg-float-reply-${Date.now()}`,
-        senderRole: 'officer',
-        senderName: activeCase?.assignedOfficer?.name || 'Dr. Ramesh Chandra Verma (PGRC)',
-        content: randomReply,
-        timestamp: 'Just now',
-        isOfficialNote: true
-      };
-      onSendMessage(officerMsg);
-    }, 1500);
+  const handleUploadForRequest = async (requestId: string, files: FileList) => {
+    if (!activeCase) return;
+    setUploadingRequestId(requestId);
+    try {
+      const evidence = await toEvidenceFiles(files);
+      onFulfillDocumentRequest(activeCase.id, requestId, evidence, activeCase.complainantName);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Could not read the selected files.');
+    } finally {
+      setUploadingRequestId(null);
+    }
   };
 
   const quickChips = [
@@ -93,7 +115,6 @@ export const FloatingOfficialChat: React.FC<FloatingOfficialChatProps> = ({
           onClick={() => {
             setIsOpen(true);
             setIsMinimized(false);
-            setUnreadCount(0);
           }}
           title="Open Official AICTE Grievance Desk Chat"
         >
@@ -194,46 +215,13 @@ export const FloatingOfficialChat: React.FC<FloatingOfficialChatProps> = ({
                   </p>
                 </div>
 
-                {messages.map((m) => {
-                  const isUser = m.senderRole === 'complainant';
-                  return (
-                    <div
-                      key={m.id}
-                      className={`floating-msg-row ${isUser ? 'user-msg-row' : 'officer-msg-row'}`}
-                    >
-                      {!isUser && (
-                        <div className="officer-mini-avatar" title={m.senderName}>
-                          <Scales size={14} weight="duotone" />
-                        </div>
-                      )}
-                      <div className={`floating-msg-bubble ${isUser ? 'bubble-user' : 'bubble-officer'}`}>
-                        <div className="bubble-sender-meta flex items-center justify-between gap-2">
-                          <span className="bubble-sender-name">{m.senderName}</span>
-                          <span className="bubble-timestamp">{m.timestamp}</span>
-                        </div>
-                        <div className="bubble-content">{m.content}</div>
-                        {m.isOfficialNote && (
-                          <div className="bubble-official-tag flex items-center gap-1">
-                            <Icon e="?" size={12} />
-                            <span>Action Taken Docket Record</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {isOfficerTyping && (
-                  <div className="officer-typing-indicator flex items-center gap-2">
-                    <div className="officer-mini-avatar"><Scales size={14} weight="duotone" /></div>
-                    <div className="typing-bubble">
-                      <span className="typing-dot"></span>
-                      <span className="typing-dot"></span>
-                      <span className="typing-dot"></span>
-                    </div>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
+                <MessageThread
+                  lang={lang}
+                  messages={messages}
+                  viewer="complainant"
+                  onUploadForRequest={handleUploadForRequest}
+                  uploadingRequestId={uploadingRequestId}
+                />
               </div>
 
               {/* Quick Prompt Chips */}
@@ -261,11 +249,25 @@ export const FloatingOfficialChat: React.FC<FloatingOfficialChatProps> = ({
                   handleSend();
                 }}
               >
+                <input
+                  ref={attachInputRef}
+                  type="file"
+                  multiple
+                  className="visually-hidden-input"
+                  tabIndex={-1}
+                  aria-hidden="true"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files.length > 0) handleAttach(e.target.files);
+                    e.target.value = '';
+                  }}
+                />
                 <button
                   type="button"
                   className="floating-attach-btn"
-                  title="Attach verification receipt or fee challan"
-                  onClick={() => alert('Evidence Vault: You can attach signed proofs and fee receipts in the Track tab with automated SHA-256 integrity verification.')}
+                  title="Attach verification receipt or fee challan (SHA-256 hashed)"
+                  aria-label="Attach supporting documents"
+                  disabled={isAttaching}
+                  onClick={() => attachInputRef.current?.click()}
                 >
                   <Icon e="??" size={16} />
                 </button>
@@ -481,6 +483,15 @@ export const FloatingOfficialChat: React.FC<FloatingOfficialChatProps> = ({
         }
 
         /* Messages Body */
+        .floating-messages-body .thread-messages-area {
+          padding: 0;
+          background: transparent;
+          overflow: visible;
+          flex: none;
+        }
+        .floating-messages-body .thread-content-wrap {
+          max-width: 88%;
+        }
         .floating-messages-body {
           flex: 1;
           overflow-y: auto;

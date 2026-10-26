@@ -4,6 +4,14 @@
 
 from typing import List, Dict, Any, Optional
 import datetime
+import copy
+
+from app.timeline_hasher import (
+    chain_events,
+    append_chained_event,
+    verify_timeline_integrity,
+    compute_event_hash,
+)
 
 # Seed database for AICTE Approved Institutions
 mock_institutions: List[Dict[str, Any]] = [
@@ -13,49 +21,76 @@ mock_institutions: List[Dict[str, Any]] = [
         "name": "Delhi Technological University (DTU)",
         "city": "New Delhi",
         "state": "Delhi",
+        "region": "Northern",
         "category": "Technical",
-        "open_cases_count": 4,
-        "compliance_rating": "Grade A+ (98.4%)"
+        "open_cases_count": 3,
+        "compliance_rating": "Grade B (Needs Scrutiny)"
     },
     {
         "id": "inst-2",
-        "permanent_id": "1-29481903",
-        "name": "College of Engineering Pune (COEP Tech)",
+        "permanent_id": "1-45892110",
+        "name": "COEP Technological University (formerly COEP)",
         "city": "Pune",
         "state": "Maharashtra",
+        "region": "Western",
         "category": "Technical",
         "open_cases_count": 2,
-        "compliance_rating": "Grade A+ (99.1%)"
+        "compliance_rating": "Grade A (94.5%)"
     },
     {
         "id": "inst-3",
-        "permanent_id": "1-48201948",
-        "name": "Veermata Jijabai Technological Institute (VJTI)",
-        "city": "Mumbai",
+        "permanent_id": "1-332918231",
+        "name": "COEP Hostel & Examination Bureau",
+        "city": "Pune",
         "state": "Maharashtra",
+        "region": "Western",
         "category": "Technical",
-        "open_cases_count": 3,
-        "compliance_rating": "Grade A (95.0%)"
+        "open_cases_count": 1,
+        "compliance_rating": "Grade B+ (88.2%)"
     },
     {
         "id": "inst-4",
-        "permanent_id": "1-85729104",
-        "name": "National Institute of Technology Trichy (NITT)",
-        "city": "Tiruchirappalli",
-        "state": "Tamil Nadu",
+        "permanent_id": "1-12490182",
+        "name": "Veermata Jijabai Technological Institute (VJTI)",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "region": "Western",
         "category": "Technical",
-        "open_cases_count": 1,
-        "compliance_rating": "Grade A++ (99.7%)"
+        "open_cases_count": 2,
+        "compliance_rating": "Grade A+ (96.8%)"
     },
     {
         "id": "inst-5",
+        "permanent_id": "1-15029184",
+        "name": "Sardar Patel College of Engineering (SPCE)",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "region": "Western",
+        "category": "Technical",
+        "open_cases_count": 1,
+        "compliance_rating": "Grade A+ (97.4%)"
+    },
+    {
+        "id": "inst-6",
+        "permanent_id": "1-10294821",
+        "name": "Delhi Institute of Engineering & Technology (DIET)",
+        "city": "New Delhi",
+        "state": "Delhi",
+        "region": "Northern",
+        "category": "Technical",
+        "open_cases_count": 2,
+        "compliance_rating": "Grade C (Critical Overdue)"
+    },
+    {
+        "id": "inst-7",
         "permanent_id": "1-93810294",
         "name": "RV College of Engineering",
         "city": "Bengaluru",
         "state": "Karnataka",
+        "region": "Southern",
         "category": "Technical",
-        "open_cases_count": 6,
-        "compliance_rating": "Grade A (94.2%)"
+        "open_cases_count": 1,
+        "compliance_rating": "Grade A++ (99.2%)"
     }
 ]
 
@@ -163,6 +198,207 @@ mock_grievances: List[Dict[str, Any]] = [
             }
         ],
         "related_case_count": 3
+    },
+    {
+        "id": "AICTE-2026-GRV-79114",
+        "title": "Caution deposit deduction of ₹44,000 without explanation",
+        "category": "FEES_REFUND",
+        "category_label": "Fee Refund & Excess Charges",
+        "institution_name": "Delhi Technological University (DTU)",
+        "aicte_permanent_id": "1-10928341",
+        "city": "New Delhi",
+        "state": "Delhi",
+        "complainant_name": "Pooja Kulkarni",
+        "complainant_role": "Student",
+        "contact_mobile": "+91 98111 22334",
+        "contact_email": "pooja.k@example.com",
+        "is_anonymous": False,
+        "details": "DTU Finance Section deducted ₹44,000 from my caution money upon graduation alleging library damages without providing itemized receipt or proof.",
+        "current_stage": "INVESTIGATION",
+        "stage_number": 3,
+        "sla_hours_remaining": 36,
+        "assigned_officer": {
+            "name": "Dr. Ramesh Chandra Verma",
+            "designation": "Director, Public Grievance Redressal Cell (PGRC)",
+            "bureau": "AICTE Head Office, New Delhi",
+            "badge_verified": True
+        },
+        "evidence_list": [
+            {
+                "id": "ev-p1",
+                "name": "Fee_Challan_Deduction_Slip.pdf",
+                "size": 420000,
+                "type": "application/pdf",
+                "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "upload_date": "20 Oct 2026"
+            }
+        ],
+        "timeline": [
+            {
+                "id": "tp-1",
+                "title": "Grievance Formally Registered",
+                "description": "Case registered regarding caution fee deduction. Assigned to PGRC.",
+                "actor": "System Gateway",
+                "role": "Central Dispatch",
+                "timestamp": "20 Oct 2026, 09:15 AM",
+                "stage": "REGISTERED"
+            }
+        ],
+        "related_case_ids": []
+    },
+    {
+        "id": "AICTE-2026-GRV-84931",
+        "title": "Non-Refund of Security Deposit Post Seat Cancellation",
+        "category": "FEES_REFUND",
+        "category_label": "Fee Refund & Excess Charges",
+        "institution_name": "DTU Delhi",
+        "aicte_permanent_id": "1-10928341",
+        "city": "New Delhi",
+        "state": "Delhi",
+        "complainant_name": "Rohan Gupta",
+        "complainant_role": "Student",
+        "contact_mobile": "+91 99222 33445",
+        "contact_email": "rohan.g@example.com",
+        "is_anonymous": False,
+        "details": "I withdrew from Computer Engineering seat before deadline but DTU accounts section refused to refund caution deposit of ₹44,000.",
+        "current_stage": "REGISTERED",
+        "stage_number": 1,
+        "sla_hours_remaining": 64,
+        "assigned_officer": {
+            "name": "Dr. Ramesh Chandra Verma",
+            "designation": "Director, PGRC",
+            "bureau": "AICTE Central HQ",
+            "badge_verified": True
+        },
+        "evidence_list": [],
+        "timeline": [
+            {
+                "id": "tr-1",
+                "title": "Grievance Registered",
+                "description": "Student filed grievance regarding ₹44,000 caution deposit retention.",
+                "actor": "System Gateway",
+                "role": "Gateway",
+                "timestamp": "22 Oct 2026",
+                "stage": "REGISTERED"
+            }
+        ],
+        "related_case_ids": []
+    },
+    {
+        "id": "AICTE-2026-GRV-65021",
+        "title": "Hostel Fee Overcharge and Caution Deposit Delay",
+        "category": "FEES_REFUND",
+        "category_label": "Fee Refund & Excess Charges",
+        "institution_name": "College of Engineering Pune (COEP)",
+        "aicte_permanent_id": "1-332918231",
+        "city": "Pune",
+        "state": "Maharashtra",
+        "complainant_name": "Sneha Patil",
+        "complainant_role": "Student",
+        "contact_mobile": "+91 98333 44556",
+        "contact_email": "sneha.p@example.com",
+        "is_anonymous": False,
+        "details": "COEP hostel administration delaying caution money return.",
+        "current_stage": "RESOLVED",
+        "stage_number": 6,
+        "sla_hours_remaining": 0,
+        "assigned_officer": {
+            "name": "Dr. Ramesh Chandra Verma",
+            "designation": "Director, PGRC",
+            "bureau": "AICTE Central HQ",
+            "badge_verified": True
+        },
+        "evidence_list": [],
+        "timeline": [],
+        "related_case_ids": []
+    },
+    {
+        "id": "AICTE-2026-GRV-91024",
+        "title": "Mandatory Laptop Fee Extortion & Refusal to Issue Hall Ticket",
+        "category": "FEES_REFUND",
+        "category_label": "Fee Refund & Excess Charges",
+        "institution_name": "Delhi Institute of Engineering & Technology (DIET)",
+        "aicte_permanent_id": "1-10294821",
+        "city": "New Delhi",
+        "state": "Delhi",
+        "complainant_name": "Vikram Malhotra",
+        "complainant_role": "Student",
+        "contact_mobile": "+91 97110 99887",
+        "contact_email": "vikram.m@example.com",
+        "is_anonymous": False,
+        "details": "College is demanding ₹65,000 for mandatory unbranded laptops and withholding end-term examination admit cards in direct violation of AICTE guidelines.",
+        "current_stage": "ESCALATED",
+        "stage_number": 4,
+        "sla_hours_remaining": -72,
+        "isOverdue": True,
+        "assigned_officer": {
+            "name": "Dr. Ramesh Chandra Verma",
+            "designation": "Director, PGRC",
+            "bureau": "AICTE Central HQ",
+            "badge_verified": True
+        },
+        "evidence_list": [],
+        "timeline": [
+            {
+                "id": "t-diet-1",
+                "title": "Complaint Lodged & Cryptographically Hashed",
+                "description": "Complainant submitted fee receipt and admit card withholding notice.",
+                "actor": "Citizen Portal",
+                "role": "Citizen",
+                "timestamp": "10 Oct 2026",
+                "stage": "REGISTERED"
+            },
+            {
+                "id": "t-diet-2",
+                "title": "Escalated to State Technical Ombudsman",
+                "description": "Institution failed to respond within 21-day statutory SLA window. Case overdue.",
+                "actor": "AICTE SLA Engine",
+                "role": "System Escalation",
+                "timestamp": "18 Oct 2026",
+                "stage": "ESCALATED"
+            }
+        ],
+        "related_case_count": 2,
+        "related_case_ids": ["AICTE-2024-GRV-8102"]
+    },
+    {
+        "id": "AICTE-2026-GRV-71029",
+        "title": "Excessive Caution Deposit Retention & Disputed Library Recovery",
+        "category": "FEES_REFUND",
+        "category_label": "Fee Refund & Excess Charges",
+        "institution_name": "COEP Technological University",
+        "aicte_permanent_id": "1-45892110",
+        "city": "Pune",
+        "state": "Maharashtra",
+        "complainant_name": "Neha Deshmukh",
+        "complainant_role": "Student",
+        "contact_mobile": "+91 98220 11223",
+        "contact_email": "neha.d@example.com",
+        "is_anonymous": False,
+        "details": "Hostel administration deducted ₹25,000 without sharing inventory inspection report.",
+        "current_stage": "INVESTIGATION",
+        "stage_number": 3,
+        "sla_hours_remaining": 28,
+        "assigned_officer": {
+            "name": "Dr. Ramesh Chandra Verma",
+            "designation": "Director, PGRC",
+            "bureau": "AICTE Central HQ",
+            "badge_verified": True
+        },
+        "evidence_list": [],
+        "timeline": [
+            {
+                "id": "t-coep-1",
+                "title": "Complaint Registered",
+                "description": "Complaint regarding ₹25,000 caution money retention.",
+                "actor": "Citizen Portal",
+                "role": "Citizen",
+                "timestamp": "19 Oct 2026",
+                "stage": "REGISTERED"
+            }
+        ],
+        "related_case_count": 1,
+        "related_case_ids": []
     }
 ]
 
@@ -171,3 +407,301 @@ mock_otp_sessions: Dict[str, str] = {
     "+91 98712 34567": "849210",
     "aarav.sharma@example.com": "849210"
 }
+
+# Seed case conversations, keyed by grievance id (complainant <-> officer)
+mock_messages: Dict[str, List[Dict[str, Any]]] = {
+    "AICTE-2026-GRV-84920": [
+        {
+            "id": "msg-1",
+            "complaint_id": "AICTE-2026-GRV-84920",
+            "kind": "system",
+            "sender_role": "system",
+            "sender_name": "AICTE Grievance System",
+            "content": "Welcome Aarav Sharma. You are connected to the official enquiry channel for case AICTE-2026-GRV-84920. All messages in this thread are securely logged into the official case audit trail.",
+            "timestamp": "16 Aug 2026, 10:19 AM",
+            "read_by_officer": True,
+            "read_by_complainant": True
+        },
+        {
+            "id": "msg-2",
+            "complaint_id": "AICTE-2026-GRV-84920",
+            "kind": "clarification",
+            "sender_role": "officer",
+            "sender_name": "Dr. Ramesh Chandra Verma (PGRC)",
+            "content": "Dear Complainant Aarav Sharma, I have reviewed your submission and the attached Fee Challan. We have dispatched an urgent statutory requisition to the Registrar of DTU regarding the ₹44,000 refund pursuant to AICTE guidelines. Could you please confirm if you received any written reply from the Dean Academics?",
+            "timestamp": "18 Aug 2026, 11:05 AM",
+            "read_by_officer": True,
+            "read_by_complainant": True
+        },
+        {
+            "id": "msg-3",
+            "complaint_id": "AICTE-2026-GRV-84920",
+            "kind": "text",
+            "sender_role": "complainant",
+            "sender_name": "Aarav Sharma",
+            "content": "Sir, I visited the accounts section twice on 22nd August. They verbally stated that institutional policy requires 3 months for caution money processing. However, as per AICTE handbook, seat withdrawal before cutoff mandates refund within 7 working days.",
+            "timestamp": "18 Aug 2026, 11:20 AM",
+            "read_by_officer": True,
+            "read_by_complainant": True
+        },
+        {
+            "id": "msg-4",
+            "complaint_id": "AICTE-2026-GRV-84920",
+            "kind": "clarification",
+            "sender_role": "officer",
+            "sender_name": "Dr. Ramesh Chandra Verma (PGRC)",
+            "content": "Noted. Institutional internal policy cannot supersede Central AICTE Regulations. We have summoned the College Accounts Nodal Officer for an online hearing tomorrow at 3:00 PM. We will push for direct NEFT clearance.",
+            "timestamp": "18 Aug 2026, 02:40 PM",
+            "read_by_officer": True,
+            "read_by_complainant": True
+        },
+        {
+            "id": "msg-5",
+            "complaint_id": "AICTE-2026-GRV-84920",
+            "kind": "system",
+            "sender_role": "system",
+            "sender_name": "AICTE Settlement Gateway",
+            "content": "UPDATE: DTU has uploaded the Action Taken Report (ATR) along with NEFT UTR number SBIN202609148201 for ₹44,000. Please verify the OTP to close the case.",
+            "timestamp": "Today at 11:32 AM",
+            "read_by_officer": True,
+            "read_by_complainant": True
+        }
+    ]
+}
+
+# Resolution Proofs ledger with Closure-Quality Scrutiny metadata
+mock_resolution_proofs: List[Dict[str, Any]] = [
+    {
+        "id": "prf-84920",
+        "complaint_id": "AICTE-2026-GRV-84920",
+        "complaint_title": "Excessive Caution Money & Tuition Fee Non-Refund after AICTE Round 1 Seat Withdrawal",
+        "category": "FEES_REFUND",
+        "institution_name": "Delhi Technological University (DTU)",
+        "permanent_id": "1-10928341",
+        "submitted_at": "2026-10-25T11:30:00Z",
+        "submitted_by": "Prof. Alok Mathur (Nodal Officer, DTU)",
+        "proposed_resolution_summary": "Pursuant to AICTE Regulation Chapter 10, the College Finance Committee has cleared the full caution money refund of ₹44,000 to student bank account via NEFT on 22-Oct-2026. Bank Transaction Reference UTR: UTR-SBIN202609148201. Bank scroll and payment clearance slip attached.",
+        "proof_document_name": "NEFT_Refund_Scroll_DTU_84920.pdf",
+        "proof_sha256": "a94f52079cd89a3f324982187321a4f028491028349182394812948129481234",
+        "status": "ACCEPTED_FOR_OTP",
+        "reviewer_remarks": "Verified: Legitimate NEFT transaction with 12-digit UTR and valid institutional clearance memo. OTP sent to complainant.",
+        "reviewed_at": "2026-10-25T12:00:00Z",
+        "reviewed_by": "Dr. Sanjeev Khurana (PGRC)",
+        "complainant_dispute_filed": False,
+        "dispute_reason": None
+    },
+    {
+        "id": "prf-79114",
+        "complaint_id": "AICTE-2026-GRV-79114",
+        "complaint_title": "Caution deposit deduction of ₹44,000 without explanation",
+        "category": "FEES_REFUND",
+        "institution_name": "Delhi Technological University (DTU)",
+        "permanent_id": "1-10928341",
+        "submitted_at": "2026-10-25T14:15:00Z",
+        "submitted_by": "Accounts Clerk, DTU",
+        "proposed_resolution_summary": "The matter has been noted and forwarded to the concerned accounts section for necessary compliance. Suitable instructions have been issued to the concerned staff. Matter is closed from our end.",
+        "proof_document_name": "",
+        "proof_sha256": "N/A",
+        "status": "PENDING_REVIEW",
+        "reviewer_remarks": None,
+        "reviewed_at": None,
+        "reviewed_by": None,
+        "complainant_dispute_filed": False,
+        "dispute_reason": None
+    },
+    {
+        "id": "prf-84931",
+        "complaint_id": "AICTE-2026-GRV-84931",
+        "complaint_title": "Non-Refund of Security Deposit Post Seat Cancellation",
+        "category": "FEES_REFUND",
+        "institution_name": "DTU Delhi",
+        "permanent_id": "1-10928341",
+        "submitted_at": "2026-10-25T16:00:00Z",
+        "submitted_by": "Accounts Clerk, DTU",
+        "proposed_resolution_summary": "The matter has been noted and forwarded to the respective accounts department for necessary compliance. Action has been initiated, and matter is under process.",
+        "proof_document_name": "",
+        "proof_sha256": "N/A",
+        "status": "PENDING_REVIEW",
+        "reviewer_remarks": None,
+        "reviewed_at": None,
+        "reviewed_by": None,
+        "complainant_dispute_filed": False,
+        "dispute_reason": None
+    },
+    {
+        "id": "prf-65021",
+        "complaint_id": "AICTE-2026-GRV-65021",
+        "complaint_title": "Marksheet Withheld & Excessive Charges",
+        "category": "ADMISSIONS_EXAM",
+        "institution_name": "College of Engineering Pune (COEP Tech)",
+        "permanent_id": "1-332918231",
+        "submitted_at": "2026-10-25T17:30:00Z",
+        "submitted_by": "Exam Superintendent, COEP",
+        "proposed_resolution_summary": "The complainant is advised to contact the Affiliating University Examination Section directly as marksheet issuance does not pertain to this department. Grievance disposed.",
+        "proof_document_name": "",
+        "proof_sha256": "N/A",
+        "status": "PENDING_REVIEW",
+        "reviewer_remarks": None,
+        "reviewed_at": None,
+        "reviewed_by": None,
+        "complainant_dispute_filed": True,
+        "dispute_reason": "College passed responsibility to university without issuing the clearance certificate."
+    }
+]
+
+# Seed inspection orders issued by AICTE Vigilance & Grievance Bureau
+mock_inspection_orders: List[Dict[str, Any]] = [
+    {
+        "id": "INSP-2026-081",
+        "permanent_id": "1-10928341",
+        "institution_name": "Delhi Technological University (DTU)",
+        "officer_name": "Dr. Ramesh Chandra Verma (PGRC)",
+        "inspection_type": "SURPRISE_PHYSICAL",
+        "target_date": "2026-11-02",
+        "terms_of_reference": "Forensic audit of student fee refund records, non-compliance with Chapter 10 refund cutoff, and examination of 3 identical caution money retention cases.",
+        "inspecting_team": ["Dr. Ramesh Chandra Verma", "Shri S. K. Bansal (Finance Bureau)", "State Technical Officer"],
+        "status": "ORDERED",
+        "ordered_at": "2026-10-25T15:30:00Z"
+    }
+]
+
+def get_past_atrs_for_institution(permanent_id: str) -> List[str]:
+    """Retrieve historical ATR summaries submitted by an institution to detect copy-paste replies."""
+    return [
+        p["proposed_resolution_summary"]
+        for p in mock_resolution_proofs
+        if p.get("permanent_id") == permanent_id and p.get("proposed_resolution_summary")
+    ]
+
+
+# ==========================================================================
+# Cryptographic Hash-Chain Initialization & State Management
+# ==========================================================================
+
+# Pre-chain all grievances' timelines with sequential SHA-256 hashes
+for grv in mock_grievances:
+    if "timeline" in grv and grv["timeline"]:
+        grv["timeline"] = chain_events(grv["timeline"])
+
+# In-memory original backup snapshot to allow restoring authentic state after demo tampering
+authentic_timelines_backup: Dict[str, List[Dict[str, Any]]] = {
+    grv["id"]: copy.deepcopy(grv["timeline"])
+    for grv in mock_grievances
+    if "timeline" in grv and grv["timeline"]
+}
+
+
+def get_case_by_id(case_id: str) -> Optional[Dict[str, Any]]:
+    for g in mock_grievances:
+        if g["id"].lower() == case_id.lower():
+            return g
+    return None
+
+
+def verify_case_timeline(case_id: str) -> Dict[str, Any]:
+    case = get_case_by_id(case_id)
+    if not case:
+        return {
+            "case_id": case_id,
+            "is_valid": False,
+            "total_events_verified": 0,
+            "verification_status": "EMPTY_TIMELINE",
+            "message": f"Case {case_id} not found."
+        }
+    timeline = case.get("timeline", [])
+    result = verify_timeline_integrity(timeline)
+    result["case_id"] = case_id
+    return result
+
+
+def tamper_case_timeline(case_id: str, event_index: int, tampered_text: str) -> Dict[str, Any]:
+    """
+    Modifies an event's text at event_index WITHOUT re-computing hashes.
+    This simulates an unauthorized backdated database mutation or deletion.
+    """
+    case = get_case_by_id(case_id)
+    if not case:
+        return {"success": False, "message": f"Case {case_id} not found."}
+    
+    timeline = case.get("timeline", [])
+    if not timeline:
+        return {"success": False, "message": "Timeline is empty."}
+
+    idx = max(0, min(event_index - 1, len(timeline) - 1))
+    target_event = timeline[idx]
+    
+    # Intentionally corrupt the event payload
+    target_event["description"] = tampered_text
+    target_event["actionTaken"] = tampered_text
+    target_event["is_tampered"] = True
+    target_event["tampered_at"] = datetime.datetime.now().isoformat()
+
+    # Re-run verification to capture the cryptographic breakage immediately
+    verification = verify_timeline_integrity(timeline)
+    verification["case_id"] = case_id
+
+    return {
+        "success": True,
+        "message": f"Tampered event #{idx + 1} ('{target_event.get('title') or target_event.get('stageName')}'). Hashes were NOT updated.",
+        "tampered_event_id": target_event.get("id"),
+        "tampered_index": idx + 1,
+        "verification": verification
+    }
+
+
+def restore_case_timeline(case_id: str) -> Dict[str, Any]:
+    """Restores the authentic, untampered timeline snapshot from backup."""
+    case = get_case_by_id(case_id)
+    if not case:
+        return {"success": False, "message": f"Case {case_id} not found."}
+
+    if case_id in authentic_timelines_backup:
+        case["timeline"] = copy.deepcopy(authentic_timelines_backup[case_id])
+    else:
+        # Re-chain from scratch
+        case["timeline"] = chain_events(case.get("timeline", []))
+
+    verification = verify_timeline_integrity(case["timeline"])
+    verification["case_id"] = case_id
+
+    return {
+        "success": True,
+        "message": f"Authentic cryptographic hash-chain restored for case {case_id}.",
+        "verification": verification,
+        "timeline": case["timeline"]
+    }
+
+
+def add_chained_timeline_event(
+    case: Dict[str, Any],
+    title: str,
+    description: str,
+    actor: str,
+    role: str
+) -> Dict[str, Any]:
+    """Adds a new event to the case timeline and binds its SHA-256 hash to the head event."""
+    if "timeline" not in case:
+        case["timeline"] = []
+
+    new_event_raw = {
+        "id": f"t-{int(datetime.datetime.now().timestamp() * 1000)}",
+        "title": title,
+        "description": description,
+        "stageName": title,
+        "actionTaken": description,
+        "actor": actor,
+        "role": role,
+        "performedByName": actor,
+        "performedByRole": role,
+        "timestamp": datetime.datetime.now().strftime("%d %b %Y, %I:%M %p"),
+        "stage": case.get("current_stage", "IN_PROGRESS"),
+    }
+
+    chained_event = append_chained_event(case["timeline"], new_event_raw)
+    case["timeline"].append(chained_event)
+
+    # Update backup snapshot as well so newly appended valid events persist
+    if case["id"] in authentic_timelines_backup:
+        authentic_timelines_backup[case["id"]] = copy.deepcopy(case["timeline"])
+
+    return chained_event

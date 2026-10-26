@@ -11,19 +11,41 @@ import { TrackComplaintView } from './views/TrackComplaintView';
 import { UserAdminChatView } from './views/UserAdminChatView';
 import { AdministrationView } from './views/AdministrationView';
 import { DiscordReplicaView } from './views/DiscordReplicaView';
+import { AdminInboxView } from './views/AdminInboxView';
 import { FloatingOfficialChat } from './components/FloatingOfficialChat';
+import { AdminPortal } from './admin/App';
 import {
   mockInstitutions,
   initialComplaints,
-  initialChatMessages
+  initialConversations
 } from './data/mockData';
-import { Complaint, Institution, UserAdminMessage, StageKey } from './types';
+import {
+  Complaint,
+  Institution,
+  UserAdminMessage,
+  StageKey,
+  ConversationMap,
+  ConversationReader,
+  DocumentRequest,
+  EvidenceFile,
+  NewTimelineEvent
+} from './types';
 import { Icon } from './components/Icon';
 
 const VALID_TABS: ActiveTab[] = [
   'home', 'citizen', 'admin', 'dashboard', 'file-complaint',
-  'track', 'chat', 'discord', 'login', 'citizen-login', 'admin-login'
+  'track', 'chat', 'discord', 'login', 'citizen-login', 'admin-login', 'admin-inbox'
 ];
+
+const makeId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
+const withTimelineEvent = (c: Complaint, event: NewTimelineEvent): Complaint => ({
+  ...c,
+  timeline: [
+    ...c.timeline,
+    { ...event, id: makeId('tl'), timestamp: 'Just now', stage: event.stage ?? c.currentStage }
+  ]
+});
 
 export function App() {
   const [lang, setLang] = useState<Language>('en');
@@ -73,9 +95,12 @@ export function App() {
   // ── Application data ──
   const [institutions] = useState<Institution[]>(mockInstitutions);
   const [complaints, setComplaints] = useState<Complaint[]>(initialComplaints);
-  const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(initialComplaints[0]);
+  // Selection is stored by id so views always read the latest version of the complaint
+  const [selectedComplaintId, setSelectedComplaintId] = useState<string | null>(initialComplaints[0]?.id ?? null);
   const [selectedInstForComplaint, setSelectedInstForComplaint] = useState<Institution | null>(null);
-  const [chatMessages, setChatMessages] = useState<UserAdminMessage[]>(initialChatMessages);
+  const [conversations, setConversations] = useState<ConversationMap>(initialConversations);
+
+  const selectedComplaint = complaints.find(c => c.id === selectedComplaintId) ?? null;
 
   // Apply accessibility tokens
   useEffect(() => {
@@ -91,15 +116,38 @@ export function App() {
   }, [highContrast]);
 
   // ── Handlers ──
-  const handleAddNewComplaint = (newComplaint: Complaint) => {
-    setComplaints(prev => [newComplaint, ...prev]);
-    setSelectedComplaint(newComplaint);
+  const updateComplaint = (caseId: string, update: (c: Complaint) => Complaint) => {
+    setComplaints(prev => prev.map(c => (c.id === caseId ? update(c) : c)));
   };
 
-  const handleUpdateComplaintStage = (caseId: string, newStage: StageKey, feedback?: string) => {
-    setComplaints(prev => prev.map(c => {
-      if (c.id !== caseId) return c;
-      return {
+  const appendMessage = (complaintId: string, msg: UserAdminMessage) => {
+    setConversations(prev => ({ ...prev, [complaintId]: [...(prev[complaintId] || []), msg] }));
+  };
+
+  const handleAddNewComplaint = (newComplaint: Complaint) => {
+    setComplaints(prev => [newComplaint, ...prev]);
+    setSelectedComplaintId(newComplaint.id);
+    appendMessage(newComplaint.id, {
+      id: makeId('msg'),
+      complaintId: newComplaint.id,
+      kind: 'system',
+      senderRole: 'system',
+      senderName: 'AICTE Grievance System',
+      content: `Conversation opened for case ${newComplaint.id}. All messages in this thread are logged into the official case audit trail.`,
+      timestamp: 'Just now',
+      readByOfficer: true,
+      readByComplainant: true
+    });
+  };
+
+  const handleUpdateComplaintStage = (
+    caseId: string,
+    newStage: StageKey,
+    feedback?: string,
+    event?: NewTimelineEvent
+  ) => {
+    updateComplaint(caseId, c => {
+      const updated: Complaint = {
         ...c,
         currentStage: newStage,
         stageNumber: newStage === 'RESOLVED' ? 6 : c.stageNumber,
@@ -111,16 +159,144 @@ export function App() {
           citizenFeedback: feedback || c.otpVerification?.citizenFeedback
         }
       };
+      return event ? withTimelineEvent(updated, { ...event, stage: newStage }) : updated;
+    });
+  };
+
+  // Complainant or officer message; attached files are also added to the case evidence
+  const handleSendMessage = (complaintId: string, msg: UserAdminMessage) => {
+    appendMessage(complaintId, msg);
+    const files = msg.attachments || [];
+    if (files.length > 0) {
+      updateComplaint(complaintId, c => withTimelineEvent(
+        { ...c, evidenceList: [...c.evidenceList, ...files] },
+        {
+          title: 'Supplementary Evidence Shared via Case Conversation',
+          description: `${files.length} file(s) shared with SHA-256 digests: ${files.map(f => f.name).join(', ')}.`,
+          actor: msg.senderName,
+          role: msg.senderRole === 'officer' ? 'AICTE Officer' : 'Complainant'
+        }
+      ));
+    }
+  };
+
+  const handleRequestDocuments = (
+    complaintId: string,
+    officerName: string,
+    request: Omit<DocumentRequest, 'id' | 'status'>,
+    message: string
+  ) => {
+    appendMessage(complaintId, {
+      id: makeId('msg'),
+      complaintId,
+      kind: 'document_request',
+      senderRole: 'officer',
+      senderName: officerName,
+      content: message,
+      timestamp: 'Just now',
+      documentRequest: { ...request, id: makeId('docreq'), status: 'pending' },
+      readByOfficer: true,
+      readByComplainant: false
+    });
+    updateComplaint(complaintId, c => withTimelineEvent(c, {
+      title: 'Documents Requested from Complainant',
+      description: `Requested: ${request.items.join(', ')}${request.dueDate ? ` · Due by ${request.dueDate}` : ''}.`,
+      actor: officerName,
+      role: 'AICTE Officer'
     }));
   };
 
-  const handleSendMessage = (msg: UserAdminMessage) => {
-    setChatMessages(prev => [...prev, msg]);
+  const handleAddClarification = (complaintId: string, officerName: string, text: string) => {
+    appendMessage(complaintId, {
+      id: makeId('msg'),
+      complaintId,
+      kind: 'clarification',
+      senderRole: 'officer',
+      senderName: officerName,
+      content: text,
+      timestamp: 'Just now',
+      isOfficialNote: true,
+      readByOfficer: true,
+      readByComplainant: false
+    });
+    updateComplaint(complaintId, c => withTimelineEvent(c, {
+      title: 'Clarification Issued to Complainant',
+      description: text.length > 160 ? `${text.slice(0, 157)}...` : text,
+      actor: officerName,
+      role: 'AICTE Officer'
+    }));
+  };
+
+  const handleMarkThreadRead = (complaintId: string, reader: ConversationReader) => {
+    const flag = reader === 'officer' ? 'readByOfficer' : 'readByComplainant';
+    setConversations(prev => {
+      const thread = prev[complaintId];
+      if (!thread || thread.every(m => m[flag])) return prev;
+      return { ...prev, [complaintId]: thread.map(m => (m[flag] ? m : { ...m, [flag]: true })) };
+    });
+  };
+
+  const handleFulfillDocumentRequest = (
+    complaintId: string,
+    requestId: string,
+    files: EvidenceFile[],
+    senderName: string
+  ) => {
+    const requestMsg = (conversations[complaintId] || []).find(m => m.documentRequest?.id === requestId);
+    const request = requestMsg?.documentRequest;
+    if (!request || request.status === 'fulfilled' || files.length === 0) return;
+
+    setConversations(prev => ({
+      ...prev,
+      [complaintId]: [
+        ...(prev[complaintId] || []).map(m =>
+          m.documentRequest?.id === requestId
+            ? {
+                ...m,
+                documentRequest: {
+                  ...request,
+                  status: 'fulfilled' as const,
+                  fulfilledAt: 'Just now',
+                  fulfilledFileIds: files.map(f => f.id)
+                }
+              }
+            : m
+        ),
+        {
+          id: makeId('msg'),
+          complaintId,
+          kind: 'document_submission',
+          senderRole: 'complainant',
+          senderName,
+          content: `Submitted ${files.length} document(s) for: ${request.items.join(', ')}.`,
+          timestamp: 'Just now',
+          attachments: files,
+          replyToRequestId: requestId,
+          readByOfficer: false,
+          readByComplainant: true
+        }
+      ]
+    }));
+
+    updateComplaint(complaintId, c => withTimelineEvent(
+      { ...c, evidenceList: [...c.evidenceList, ...files] },
+      {
+        title: 'Requested Documents Submitted by Complainant',
+        description: `${files.length} file(s) uploaded with SHA-256 digests in response to the request for: ${request.items.join(', ')}.`,
+        actor: senderName,
+        role: 'Complainant'
+      }
+    ));
   };
 
   const handleOpenChatWithComplaint = (complaint: Complaint) => {
-    setSelectedComplaint(complaint);
+    setSelectedComplaintId(complaint.id);
     setIsFloatingChatOpen(true);
+  };
+
+  const handleOpenCaseFromInbox = (complaintId: string) => {
+    setSelectedComplaintId(complaintId);
+    handleTabChange('track');
   };
 
   const handleLoginSuccess = (user: typeof currentUser) => {
@@ -134,41 +310,61 @@ export function App() {
 
   const pendingOtpCount = complaints.filter(c => c.currentStage === 'PENDING_OTP').length;
   const isLoggedIn = currentUser !== null;
+  const allMessages = Object.values(conversations).flat();
+  const officerUnreadCount = allMessages.filter(m => !m.readByOfficer).length;
+  const complainantUnreadCount = allMessages.filter(m => !m.readByComplainant).length;
+  // Name used on Support Inbox messages; falls back to the case's assigned officer
+  const officialName =
+    currentUser && (currentUser.role.includes('Official') || currentUser.role.includes('Nodal'))
+      ? currentUser.name
+      : null;
+
+  const isAdminView = activeTab === 'admin' || activeTab === 'admin-inbox';
 
   return (
     <div className="app-root">
-      {/* 1. Government Header Strip */}
-      <HeaderStrip
-        lang={lang}
-        setLang={setLang}
-        fontScale={fontScale}
-        setFontScale={setFontScale}
-        highContrast={highContrast}
-        setHighContrast={setHighContrast}
-        activeRole={activeRole}
-        setActiveRole={(newRole) => {
-          setActiveRole(newRole);
-          handleTabChange(newRole === 'official' ? 'admin-login' : 'home');
-        }}
-        currentUser={currentUser}
-        onOpenLogin={() => handleTabChange('citizen-login')}
-        onNavigateHome={() => handleTabChange('home')}
-        onLogout={() => {
-          setCurrentUser(null);
-          setActiveRole('complainant');
-          handleTabChange('home');
-        }}
-      />
+      {/* 1. Government Header Strip (Citizen Side) */}
+      {!isAdminView && (
+        <HeaderStrip
+          lang={lang}
+          setLang={setLang}
+          fontScale={fontScale}
+          setFontScale={setFontScale}
+          highContrast={highContrast}
+          setHighContrast={setHighContrast}
+          activeRole={activeRole}
+          setActiveRole={(newRole) => {
+            setActiveRole(newRole);
+            // Signed-in officials go straight to the portal instead of the login screen
+            if (newRole === 'official') handleTabChange(officialName ? 'admin' : 'admin-login');
+            else handleTabChange('home');
+          }}
+          currentUser={currentUser}
+          onOpenLogin={() => handleTabChange('citizen-login')}
+          onNavigateHome={() => handleTabChange('home')}
+          onLogout={() => {
+            setCurrentUser(null);
+            setActiveRole('complainant');
+            handleTabChange('home');
+          }}
+        />
+      )}
 
-      {/* 2. Navigation */}
-      <Navbar
-        lang={lang}
-        activeTab={activeTab}
-        setActiveTab={handleTabChange}
-        pendingOtpCount={pendingOtpCount}
-        onOpenFloatingChat={() => setIsFloatingChatOpen(true)}
-        isLoggedIn={isLoggedIn}
-      />
+      {/* 2. Navigation (Citizen Side) */}
+      {!isAdminView && (
+        <Navbar
+          lang={lang}
+          activeTab={activeTab}
+          setActiveTab={handleTabChange}
+          pendingOtpCount={pendingOtpCount}
+          onOpenFloatingChat={() => setIsFloatingChatOpen(true)}
+          isLoggedIn={isLoggedIn}
+          activeRole={activeRole}
+          isOfficialSignedIn={officialName !== null}
+          officerUnreadCount={officerUnreadCount}
+          complainantUnreadCount={complainantUnreadCount}
+        />
+      )}
 
       {/* 3. Main content */}
       <main id="main-content">
@@ -229,7 +425,7 @@ export function App() {
             setActiveTab={handleTabChange}
             complaints={complaints}
             onSelectComplaintForTracking={(complaint) => {
-              setSelectedComplaint(complaint);
+              setSelectedComplaintId(complaint.id);
               handleTabChange('track');
             }}
             onOpenChatWithComplaint={handleOpenChatWithComplaint}
@@ -259,19 +455,15 @@ export function App() {
           />
         )}
 
-        {/* Administration */}
-        {activeTab === 'admin' && (
-          <AdministrationView
-            lang={lang}
-            setActiveTab={handleTabChange}
-            complaints={complaints}
-            institutions={institutions}
-            onSelectComplaintForTracking={(complaint) => {
-              setSelectedComplaint(complaint);
-              handleTabChange('track');
+        {/* Enterprise Administration Portal (15 modules) */}
+        {(activeTab === 'admin' || activeTab === 'admin-inbox') && (
+          <AdminPortal
+            officerInfo={currentUser}
+            onExitAdmin={() => {
+              setActiveRole('complainant');
+              handleTabChange('home');
             }}
-            onOpenOfficialChat={handleOpenChatWithComplaint}
-            onUpdateComplaintStage={handleUpdateComplaintStage}
+            initialRoute={activeTab === 'admin-inbox' ? '/messages' : '/'}
           />
         )}
 
@@ -281,8 +473,10 @@ export function App() {
             lang={lang}
             setActiveTab={handleTabChange}
             complaint={selectedComplaint}
-            messages={chatMessages}
+            messages={conversations[selectedComplaint.id] || []}
             onSendMessage={handleSendMessage}
+            onFulfillDocumentRequest={handleFulfillDocumentRequest}
+            onMarkThreadRead={handleMarkThreadRead}
           />
         )}
 
@@ -295,19 +489,25 @@ export function App() {
         )}
       </main>
 
-      {/* 4. Floating chat */}
-      <FloatingOfficialChat
-        complaints={complaints}
-        selectedComplaint={selectedComplaint}
-        onSelectComplaint={(c) => setSelectedComplaint(c)}
-        messages={chatMessages}
-        onSendMessage={handleSendMessage}
-        isOpen={isFloatingChatOpen}
-        setIsOpen={setIsFloatingChatOpen}
-      />
+      {/* 4. Floating chat (Citizen side only) */}
+      {!isAdminView && (
+        <FloatingOfficialChat
+          lang={lang}
+          complaints={complaints}
+          selectedComplaint={selectedComplaint}
+          onSelectComplaint={(c) => setSelectedComplaintId(c.id)}
+          conversations={conversations}
+          unreadCount={complainantUnreadCount}
+          onSendMessage={handleSendMessage}
+          onFulfillDocumentRequest={handleFulfillDocumentRequest}
+          onMarkThreadRead={handleMarkThreadRead}
+          isOpen={isFloatingChatOpen}
+          setIsOpen={setIsFloatingChatOpen}
+        />
+      )}
 
-      {/* 5. Footer */}
-      {activeTab !== 'discord' && (
+      {/* 5. Footer (Citizen side only) */}
+      {activeTab !== 'discord' && !isAdminView && (
         <footer className="gov-footer" role="contentinfo">
           <div className="container">
             <div className="footer-columns grid grid-cols-4 gap-6">

@@ -1,4 +1,6 @@
 @import "./tokens.css";
+@tailwind components;
+@tailwind utilities;
 
 /* Global CSS Reset */
 *, *::before, *::after {
@@ -57,6 +59,16 @@ small { font-size: 0.875rem; color: var(--color-neutral-600); }
 .mono {
   font-family: var(--font-mono);
   font-feature-settings: "tnum";
+}
+
+/* Hidden file inputs triggered by a visible button */
+.visually-hidden-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 /* Container */

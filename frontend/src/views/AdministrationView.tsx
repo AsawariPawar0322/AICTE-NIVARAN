@@ -32,7 +32,13 @@ interface AdministrationViewProps {
   onSelectComplaintForTracking: (complaint: Complaint) => void;
   onOpenOfficialChat: (complaint: Complaint) => void;
   onUpdateComplaintStage: (caseId: string, newStage: StageKey, feedback?: string) => void;
+  // Support Inbox rendered by App, shown under the "Messages" sub-tab
+  messagesPanel?: React.ReactNode;
+  officerUnreadCount?: number;
+  initialAdminTab?: AdminTab;
 }
+
+export type AdminTab = 'ledger' | 'clusters' | 'institutions' | 'escalations' | 'messages';
 
 export const AdministrationView: React.FC<AdministrationViewProps> = ({
   lang,
@@ -41,10 +47,13 @@ export const AdministrationView: React.FC<AdministrationViewProps> = ({
   institutions,
   onSelectComplaintForTracking,
   onOpenOfficialChat,
-  onUpdateComplaintStage
+  onUpdateComplaintStage,
+  messagesPanel,
+  officerUnreadCount = 0,
+  initialAdminTab = 'ledger'
 }) => {
   const t = translations[lang];
-  const [adminTab, setAdminTab] = useState<'ledger' | 'clusters' | 'institutions' | 'escalations'>('ledger');
+  const [adminTab, setAdminTab] = useState<AdminTab>(initialAdminTab);
   const [filterBureau, setFilterBureau] = useState<string>('ALL');
   const [filterStage, setFilterStage] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -73,6 +82,12 @@ export const AdministrationView: React.FC<AdministrationViewProps> = ({
     }
     return true;
   });
+
+  // Officers message complainants from the Support Inbox when it is available
+  const openMessagesFor = (caseItem: Complaint) => {
+    onOpenOfficialChat(caseItem);
+    if (messagesPanel) setAdminTab('messages');
+  };
 
   const handleConfirmLink = (primaryId: string, targetId: string) => {
     setConfirmedLinks(prev => ({
@@ -127,7 +142,7 @@ export const AdministrationView: React.FC<AdministrationViewProps> = ({
                 type="button"
                 className="btn btn-primary admin-header-btn"
                 onClick={() => {
-                  if (selectedCaseForAction) onOpenOfficialChat(selectedCaseForAction);
+                  if (selectedCaseForAction) openMessagesFor(selectedCaseForAction);
                 }}
               >
                 <MessageSquare size={14} />
@@ -175,6 +190,18 @@ export const AdministrationView: React.FC<AdministrationViewProps> = ({
               <span>72h SLA & Escalation Radar</span>
               {pendingOtpCount > 0 && <span className="admin-badge-alert">{pendingOtpCount} OTP Pending</span>}
             </button>
+
+            {messagesPanel && (
+              <button
+                type="button"
+                className={`admin-subnav-btn ${adminTab === 'messages' ? 'active' : ''}`}
+                onClick={() => setAdminTab('messages')}
+              >
+                <MessageSquare size={16} />
+                <span>{t.navInbox}</span>
+                {officerUnreadCount > 0 && <span className="admin-badge-alert">{officerUnreadCount} Unread</span>}
+              </button>
+            )}
           </div>
         </div>
       </section>
@@ -398,7 +425,7 @@ export const AdministrationView: React.FC<AdministrationViewProps> = ({
                             <button
                               type="button"
                               className="btn btn-outline btn-sm"
-                              onClick={() => onOpenOfficialChat(selectedCaseForAction)}
+                              onClick={() => openMessagesFor(selectedCaseForAction)}
                               title="Message Complainant"
                             >
                               <MessageSquare size={14} />
@@ -668,6 +695,8 @@ export const AdministrationView: React.FC<AdministrationViewProps> = ({
           )}
 
           {/* TAB 4: 72H SLA & ESCALATIONS */}
+          {adminTab === 'messages' && messagesPanel}
+
           {adminTab === 'escalations' && (
             <div className="escalations-layout">
               <div className="grid grid-cols-2 gap-6">
@@ -784,6 +813,7 @@ export const AdministrationView: React.FC<AdministrationViewProps> = ({
           border-top: 1px solid rgba(255, 255, 255, 0.1);
           padding-top: 8px;
           overflow-x: auto;
+          flex-wrap: wrap;
         }
         .admin-subnav-btn {
           display: inline-flex;

@@ -169,10 +169,7 @@ export const HeaderStrip: React.FC<HeaderStripProps> = ({
                 <button
                   type="button"
                   className={`role-tab ${activeRole === 'official' ? 'active-role' : ''}`}
-                  onClick={() => {
-                    setActiveRole('official');
-                    alert('AICTE Official mode selected. Shows official triage queue and regulatory cross-bureau views.');
-                  }}
+                  onClick={() => setActiveRole('official')}
                 >
                   <span>{lang === 'hi' ? 'एआईसीटीई अधिकारी' : 'AICTE Official'}</span>
                 </button>
